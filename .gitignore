@@ -1,0 +1,67 @@
+﻿# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Bases locales
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# Frontend
+node_modules/
+dist/
+build/
+
+# Sauvegardes
+sauvegardes_etape*/
+sources_originales/
+
+# Fichiers temporaires
+.DS_Store
+Thumbs.db
+
+# Sauvegardes locales
+sauvegardes/
+sauvegardes_etape*/
+
+# Secrets et certificats
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Bases de données locales
+*.db
+*.sqlite
+*.sqlite3
+
+# Archives
+*.zip
+*.7z
+*.rar
+
+
+# Anciennes versions et sauvegardes Python
+*.bak
+*.bak_*
+*.BACKUP_*
+*.avant_*
+app/main_avant_*.py
+
+docker-compose.yml.bak_securite

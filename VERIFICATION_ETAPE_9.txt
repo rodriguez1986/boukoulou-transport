@@ -1,0 +1,3 @@
+13 tests statiques réussis (étapes 7, 8, 9).
+16 fichiers Python actifs : analyse syntaxique OK.
+Sources originales non validées. Aucun test PostgreSQL ou Docker.

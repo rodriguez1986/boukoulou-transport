@@ -1,0 +1,28 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: boukoulou
+      POSTGRES_USER: boukoulou
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Definir POSTGRES_PASSWORD dans .env}
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U boukoulou"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Definir DATABASE_URL dans .env}
+      JWT_SECRET: ${JWT_SECRET:?Definir JWT_SECRET dans .env}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:?Definir ADMIN_USERNAME dans .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Definir ADMIN_PASSWORD dans .env}
+    ports: ["8000:8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

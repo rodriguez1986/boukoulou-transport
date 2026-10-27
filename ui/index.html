@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Boukoulou Transport</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<div id="login">
+  <div class="card login">
+    <img src="/static/assets/logo.png">
+    <h1>Boukoulou Transport</h1>
+    <p>Voyageons en confiance</p>
+    <input id="user" placeholder="Identifiant" autocomplete="username">
+    <input id="pass" type="password" placeholder="Mot de passe">
+    <button onclick="login()">Connexion</button>
+    <p id="err"></p>
+  </div>
+</div>
+
+<div id="app" class="hide">
+  <aside>
+    <img src="/static/assets/logo.png">
+    <div id="identity" class="identity"></div>
+    <button data-page="dash" onclick="page('dash')">Dashboard</button>
+    <button data-page="network" onclick="page('network')">Réseau & flotte</button>
+    <button data-page="fleet" onclick="page('fleet')">Gestion de flotte</button>
+    <button data-page="trips" onclick="page('trips')">Exploitation</button>
+    <button data-page="sale" onclick="page('sale')">Guichet</button>
+    <button data-page="cash" onclick="page('cash')">Caisse</button>
+    <button data-page="history" onclick="page('history')">Tickets & paiements</button>
+    <button data-page="stock" onclick="page('stock')">Stock de billets</button>
+    <button data-page="users" onclick="page('users')">Utilisateurs</button>
+    <button data-page="scan" onclick="page('scan')">Contrôle QR</button>
+    <button onclick="logout()">Déconnexion</button>
+  </aside>
+
+  <main>
+    <section id="dash">
+      <h1>Dashboard</h1>
+      <div id="kpis" class="kpis"></div>
+    </section>
+
+    <section id="network" class="hide">
+      <h1>Réseau & flotte</h1>
+      <div class="toolbar">
+        <input id="networkSearch" placeholder="Rechercher ligne, bus ou plaque" oninput="load()">
+        <select id="countryFilter" onchange="load()"><option value="">Tous les pays</option></select>
+      </div>
+
+      <div class="cols">
+        <div class="card">
+          <h2>Nouvelle ligne</h2>
+          <select id="lc"></select>
+          <input id="lcode" placeholder="Code">
+          <input id="lname" placeholder="Nom">
+          <input id="fare" type="number" placeholder="Tarif XAF">
+          <button onclick="addLine()">Enregistrer</button>
+        </div>
+
+        <div class="card">
+          <h2>Nouveau véhicule</h2>
+          <select id="vc"></select>
+          <input id="vcode" placeholder="Code">
+          <input id="plate" placeholder="Plaque">
+          <input id="cap" type="number" placeholder="Capacité">
+          <input id="vbrand" placeholder="Marque">
+          <input id="vmodel" placeholder="Modèle">
+          <input id="vyear" type="number" placeholder="Année">
+          <input id="vmileage" type="number" placeholder="Kilométrage" value="0">
+          <button onclick="addVehicle()">Enregistrer</button>
+        </div>
+      </div>
+
+      <div class="cols">
+        <div class="card"><h2>Lignes</h2><div id="lines"></div></div>
+        <div class="card"><h2>Véhicules</h2><div id="vehicles"></div></div>
+      </div>
+    </section>
+
+    <section id="fleet" class="hide">
+      <div class="section-title">
+        <div><h1>Gestion de flotte</h1><p>Véhicules, chauffeurs, affectations, maintenance et carburant</p></div>
+        <button class="secondary compact" onclick="loadFleet()">Actualiser</button>
+      </div>
+
+      <div id="fleetKpis" class="kpis fleet-kpis"></div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="fleetVehicles" onclick="fleetTab('fleetVehicles',this)">Véhicules</button>
+        <button class="tab" data-tab="fleetDrivers" onclick="fleetTab('fleetDrivers',this)">Chauffeurs</button>
+        <button class="tab" data-tab="fleetAssignments" onclick="fleetTab('fleetAssignments',this)">Affectations</button>
+        <button class="tab" data-tab="fleetMaintenance" onclick="fleetTab('fleetMaintenance',this)">Maintenance</button>
+        <button class="tab" data-tab="fleetFuel" onclick="fleetTab('fleetFuel',this)">Carburant</button>
+      </div>
+
+      <div id="fleetVehicles" class="fleet-panel">
+        <div class="card">
+          <h2>Parc véhicules</h2>
+          <div class="toolbar">
+            <input id="fleetVehicleSearch" placeholder="Rechercher code, plaque, marque, modèle" oninput="renderFleetVehicles()">
+            <select id="fleetVehicleStatus" onchange="renderFleetVehicles()">
+              <option value="">Tous les statuts</option>
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="MAINTENANCE">MAINTENANCE</option>
+              <option value="OUT_OF_SERVICE">OUT_OF_SERVICE</option>
+            </select>
+          </div>
+          <div class="scroll" id="fleetVehiclesTable"></div>
+        </div>
+      </div>
+
+      <div id="fleetDrivers" class="fleet-panel hide">
+        <div class="cols">
+          <div class="card">
+            <h2>Nouveau chauffeur</h2>
+            <select id="driverCountry"></select>
+            <input id="driverCode" placeholder="Matricule (ex. CG-DRV-002)">
+            <input id="driverFirstName" placeholder="Prénom">
+            <input id="driverLastName" placeholder="Nom">
+            <input id="driverPhone" placeholder="Téléphone">
+            <input id="driverLicense" placeholder="Numéro de permis">
+            <button onclick="addDriver()">Enregistrer le chauffeur</button>
+          </div>
+          <div class="card">
+            <h2>Chauffeurs</h2>
+            <div class="scroll" id="driversTable"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="fleetAssignments" class="fleet-panel hide">
+        <div class="cols">
+          <div class="card">
+            <h2>Nouvelle affectation</h2>
+            <select id="assignmentDriver"></select>
+            <select id="assignmentVehicle"></select>
+            <button onclick="addAssignment()">Affecter</button>
+          </div>
+          <div class="card">
+            <h2>Historique des affectations</h2>
+            <div class="scroll" id="assignmentsTable"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="fleetMaintenance" class="fleet-panel hide">
+        <div class="cols">
+          <div class="card">
+            <h2>Nouvelle maintenance</h2>
+            <select id="maintenanceVehicle"></select>
+            <input id="maintenanceType" placeholder="Type (VIDANGE, FREINS...)">
+            <input id="maintenanceDescription" placeholder="Description">
+            <input id="maintenanceCost" type="number" placeholder="Coût XAF">
+            <input id="maintenanceMileage" type="number" placeholder="Kilométrage">
+            <label>Date planifiée</label>
+            <input id="maintenanceScheduled" type="datetime-local">
+            <label>Prochaine maintenance</label>
+            <input id="maintenanceNext" type="datetime-local">
+            <select id="maintenanceStatus">
+              <option value="PLANNED">PLANNED</option>
+              <option value="IN_PROGRESS">IN_PROGRESS</option>
+              <option value="COMPLETED">COMPLETED</option>
+            </select>
+            <button onclick="addMaintenance()">Enregistrer</button>
+          </div>
+          <div class="card">
+            <h2>Historique maintenance</h2>
+            <div class="scroll" id="maintenanceTable"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="fleetFuel" class="fleet-panel hide">
+        <div class="cols">
+          <div class="card">
+            <h2>Nouveau plein</h2>
+            <select id="fuelVehicle"></select>
+            <select id="fuelDriver"><option value="">Sans chauffeur</option></select>
+            <input id="fuelLiters" type="number" step="0.01" placeholder="Litres">
+            <input id="fuelCost" type="number" placeholder="Coût XAF">
+            <input id="fuelMileage" type="number" placeholder="Kilométrage">
+            <button onclick="addFuel()">Enregistrer le plein</button>
+          </div>
+          <div class="card">
+            <h2>Historique carburant</h2>
+            <div class="scroll" id="fuelTable"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="trips" class="hide">
+<div class="section-title"><div><h1>Exploitation</h1><p>Planification, départs, arrivées et rapports de course</p></div><button class="secondary compact" onclick="loadOperations()">Actualiser</button></div>
+<div id="operationsKpis" class="kpis operations-kpis"></div>
+<div class="cols">
+<div class="card"><h2>Nouvelle course</h2><label>Ligne</label><select id="tl"></select><label>Véhicule</label><select id="tv"></select><label>Chauffeur</label><select id="td"><option value="">Sans chauffeur</option></select><label>Départ prévu</label><input id="dt" type="datetime-local"><label>Notes</label><input id="tripNotes" placeholder="Ex. Service matin"><button onclick="addTrip()">Programmer la course</button></div>
+<div class="card"><h2>Suivi d'exploitation</h2><div class="toolbar operations-toolbar"><input id="tripSearch" placeholder="Rechercher ligne, bus, chauffeur" oninput="renderOperations()"><select id="tripStatusFilter" onchange="renderOperations()"><option value="">Tous les statuts</option><option>SCHEDULED</option><option>IN_PROGRESS</option><option>COMPLETED</option><option>CANCELLED</option></select></div><div class="scroll" id="tripsTable"></div></div>
+</div>
+<div id="tripReport" class="card hide"><div class="section-title"><h2>Rapport de course</h2><button class="secondary compact" onclick="closeTripReport()">Fermer</button></div><div id="tripReportContent"></div></div>
+</section>
+
+    <section id="cash" class="hide">
+<div class="section-title"><div><h1>Caisse & recettes</h1><p>Suivi journalier des encaissements</p></div><button class="secondary compact admin-cash-report" onclick="window.print()">Imprimer le rapport</button></div>
+<div class="card cash-session"><h2>Ma session de caisse <span id="sessionBadge" class="pill">—</span></h2>
+<p id="sessionMessage" class="muted"></p>
+<div id="sessionOpenForm" class="hide"><label>Fond initial (XAF)</label><input id="openingAmount" type="number" min="0" step="1" value="0"><label>Notes</label><input id="openingNotes" maxlength="500"><button id="openSessionBtn" class="compact" onclick="openSession()">Ouvrir ma caisse</button></div>
+<div id="sessionCloseForm" class="hide"><p id="sessionInfo" class="muted"></p><div id="sessionKpis" class="kpis"></div><label>Montant déclaré (XAF)</label><input id="declaredAmount" type="number" min="0" step="1" oninput="previewDifference()"><p id="differencePreview" class="muted"></p><label>Notes de clôture</label><input id="closingNotes" maxlength="500"><button id="closeSessionBtn" class="compact" onclick="closeSession()">Clôturer ma caisse</button></div>
+<div id="lastClosure" class="hide"></div></div>
+<div class="admin-cash-report card cash-filter"><div><label>Date de caisse</label><input id="cashDate" type="date" onchange="loadCash()"></div><button class="compact" onclick="loadCash()">Actualiser</button></div>
+<div class="admin-cash-report" id="cashKpis" class="kpis cash-kpis"></div>
+<div class="admin-cash-report cash-grid"><div class="card"><h2>Recettes par opérateur</h2><div class="scroll" id="cashProviders"></div></div><div class="card"><h2>Recettes par ligne</h2><div class="scroll" id="cashLines"></div></div></div>
+<div class="admin-cash-report card"><h2>Recettes par course</h2><div class="scroll" id="cashTrips"></div></div>
+<div class="admin-cash-report card"><h2>Détail des transactions</h2><p id="cashPeriodLabel" class="muted"></p><div class="scroll" id="cashDetails"></div></div>
+</section>
+
+<section id="history" class="hide">
+      <h1>Tickets & paiements</h1>
+      <div class="toolbar"><input id="ticketSearch" placeholder="Rechercher ticket / paiement" oninput="loadHistory()"><select id="ticketStatus" onchange="loadHistory()"><option value="">Tous les statuts</option><option>PAID</option><option>USED</option><option>PENDING</option><option>EXPIRED</option></select></div>
+      <div class="card"><h2>Historique des tickets</h2><div class="scroll" id="ticketsTable"></div></div>
+      <div class="card"><h2>Historique des paiements</h2><div class="scroll" id="paymentsTable"></div></div>
+    </section>
+
+    <section id="sale" class="hide">
+ <h1>Guichet V5.9 — Vente de voyages</h1>
+ <div class="card"><p id="saleCashStatus" class="cash-sale-status"></p>
+ <label>Stock disponible (pays et tarif)</label><select id="v59SaleStock"></select>
+ <label>Nombre de voyages</label><input id="v59Quantity" type="number" min="1" max="100" value="1" oninput="v59Preview()">
+ <p id="v59Total"></p><button id="v59Sell" onclick="v59Sell()">Encaisser et générer le QR code</button></div>
+ <div id="v59Receipt" class="card"><p>En attente d'une vente.</p></div>
+ </section>
+ <section id="stock" class="hide"><h1>Stock de billets — ADMIN</h1>
+ <div class="card"><label>Pays</label><select id="v59Country"></select>
+ <label>Tarif unitaire (XAF)</label><input id="v59Fare" type="number" min="1" step="1">
+ <label>Nombre de voyages à créer</label><input id="v59StockQty" type="number" min="1" value="100">
+ <button onclick="v59CreateStock()">Créer le stock</button></div>
+ <div class="card"><h2>Stocks et ventes</h2><div id="v59Stocks"></div></div></section>
+
+    <section id="users" class="hide">
+      <div class="section-title"><div><h1>Gestion des utilisateurs</h1><p>Comptes et rôles du personnel</p></div><button class="secondary compact" onclick="loadUsers()">Actualiser</button></div>
+      <div class="cols">
+        <div class="card">
+          <h2>Créer un compte</h2>
+          <form id="createUserForm" onsubmit="createUser(event)">
+            <label for="newUsername">Identifiant</label><input id="newUsername" autocomplete="off" minlength="3" maxlength="100" required placeholder="Ex. agent02">
+            <label for="newPassword">Mot de passe</label><input id="newPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="Mot de passe sécurisé">
+            <label for="newRole">Rôle</label><select id="newRole" required><option value="AGENT">Agent de guichet</option><option value="CONTROLLER">Contrôleur</option><option value="DRIVER">Chauffeur</option><option value="ADMIN">Administrateur</option></select>
+            <p class="muted">L'accès administrateur donne des droits étendus. Vérifiez le rôle avant la création.</p>
+            <button id="createUserBtn" type="submit">Créer l'utilisateur</button>
+            <p id="userFormMessage" class="muted" role="status" aria-live="polite"></p>
+          </form>
+        </div>
+        <div class="card"><h2>Comptes existants</h2><div class="scroll" id="usersTable">Chargement…</div><p class="muted">Les changements de rôle, la désactivation et les nouveaux mots de passe invalident les sessions précédentes.</p></div>
+      </div>
+      <div class="card"><h2>Journal des actions</h2><button class="secondary compact" onclick="loadUserAudit()">Actualiser le journal</button><div class="scroll" id="userAuditTable">Chargement…</div></div>
+    </section>
+
+    <section id="driverView" class="hide"><h1>Courses programmées</h1><p class="muted">Consultation uniquement. Les affectations individuelles seront ajoutées dans une prochaine version.</p><div class="card"><div id="driverTrips"></div></div></section>
+    <section id="scan" class="hide"><h1>Contrôle QR V5.9</h1><div class="card">
+ <label>Course d'embarquement</label><select id="v59BoardTrip"></select>
+ <label>Contenu du QR (CODE|SIGNATURE)</label><input id="payload" placeholder="BT-...|signature">
+ <button onclick="validateTicket()">Valider un embarquement</button><div id="result"></div></div></section>
+  </main>
+</div>
+
+<script src="/static/js/app.js"></script>
+<script src="/static/js/v59.js"></script>
+</body>
+</html>

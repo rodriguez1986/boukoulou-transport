@@ -1,0 +1,13 @@
+cash_v59.py: syntaxe OK
+db.py: syntaxe OK
+finance_audit.py: syntaxe OK
+finance_dashboard.py: syntaxe OK
+main.py: syntaxe OK
+models.py: syntaxe OK
+payment_breakdown.py: syntaxe OK
+pdf_reports.py: syntaxe OK
+schemas.py: syntaxe OK
+security.py: syntaxe OK
+v59.py: syntaxe OK
+
+Tests unitaires non executes : passlib manquant dans environnement.

@@ -1,0 +1,7 @@
+app/cash_v59.py : SYNTAXE OK
+app/db.py : SYNTAXE OK
+app/main.py : SYNTAXE OK
+app/models.py : SYNTAXE OK
+app/schemas.py : SYNTAXE OK
+app/security.py : SYNTAXE OK
+app/v59.py : SYNTAXE OK
