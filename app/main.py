@@ -1,4 +1,5 @@
 from .gps.fleet_api import router as gps_fleet_router
+from .gps.history_api import router as gps_history_router
 from .gps.live_api import router as gps_live_router
 from .gps.device_api import router as gps_device_router
 from .gps.phone_api import router as gps_phone_router
@@ -3396,3 +3397,4 @@ app.include_router(gps_device_router)
 
 app.include_router(gps_fleet_router)
 app.include_router(gps_live_router)
+app.include_router(gps_history_router)
