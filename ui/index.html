@@ -25,6 +25,7 @@
     <div id="identity" class="identity"></div>
     <button data-page="dash" onclick="page('dash')">Dashboard</button>
     <button data-page="network" onclick="page('network')">Réseau & flotte</button>
+    <button data-page="gpsMap" onclick="page('gpsMap')">Suivi GPS</button>
     <button data-page="fleet" onclick="page('fleet')">Gestion de flotte</button>
     <button data-page="trips" onclick="page('trips')">Exploitation</button>
     <button data-page="sale" onclick="page('sale')">Guichet</button>
@@ -256,7 +257,44 @@
       <div class="card"><h2>Journal des actions</h2><button class="secondary compact" onclick="loadUserAudit()">Actualiser le journal</button><div class="scroll" id="userAuditTable">Chargement…</div></div>
     </section>
 
-    <section id="driverView" class="hide"><h1>Courses programmées</h1><p class="muted">Consultation uniquement. Les affectations individuelles seront ajoutées dans une prochaine version.</p><div class="card"><div id="driverTrips"></div></div></section>
+    <section id="gpsMap" class="hide">
+  <h1>Supervision GPS - Flotte Boukoulou Transport</h1>
+
+  <div class="card">
+    <h2>Suivi des bus en temps reel</h2>
+
+    <label for="gpsMode">Mode GPS</label>
+    <select id="gpsMode" onchange="gpsRefresh()">
+      <option value="AUTO">AUTO</option>
+      <option value="PHONE">PHONE</option>
+      <option value="DEVICE">DEVICE</option>
+    </select>
+
+    <label for="gpsCountry">Pays</label>
+    <select id="gpsCountry" onchange="gpsRefresh()">
+      <option value="ALL">Tous les pays</option>
+      <option value="1">Congo-Brazzaville</option>
+      <option value="2">Gabon</option>
+    </select>
+
+    <button onclick="gpsRefresh()">Actualiser</button>
+
+    <div class="gps-stats">
+      <div>Total : <strong id="gpsTotal">0</strong></div>
+      <div>ONLINE : <strong id="gpsOnline">0</strong></div>
+      <div>OFFLINE : <strong id="gpsOffline">0</strong></div>
+    </div>
+
+    <p id="gpsStatus">En attente...</p>
+    <p id="gpsDetails"></p>
+
+    <div id="gpsLeafletMap"></div>
+
+    <h3>Liste des vehicules</h3>
+    <div id="gpsVehicles"></div>
+  </div>
+</section>
+<section id="driverView" class="hide"><h1>Courses programmées</h1><p class="muted">Consultation uniquement. Les affectations individuelles seront ajoutées dans une prochaine version.</p><div class="card"><div id="driverTrips"></div></div></section>
     <section id="scan" class="hide"><h1>Contrôle QR V5.9</h1><div class="card">
  <label>Course d'embarquement</label><select id="v59BoardTrip"></select>
  <label>Contenu du QR (CODE|SIGNATURE)</label><input id="payload" placeholder="BT-...|signature">
@@ -264,6 +302,10 @@
   </main>
 </div>
 
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="/static/css/gps-map.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/static/js/gps-map.js"></script>
 <script src="/static/js/app.js"></script>
 <script src="/static/js/v59.js"></script>
 </body>

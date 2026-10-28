@@ -1,0 +1,37 @@
+#gpsLeafletMap {
+  height: 480px;
+  width: 100%;
+  border-radius: 12px;
+  margin-top: 15px;
+  background: #e8edf1;
+  z-index: 0;
+}
+#gpsStatus {
+  font-weight: bold;
+  margin-top: 15px;
+}
+.gps-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin: 15px 0;
+}
+
+.gps-stats > div {
+  padding: 12px 18px;
+  background: #eef3f7;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.gps-vehicle-item {
+  padding: 12px;
+  margin: 8px 0;
+  border: 1px solid #dce3e8;
+  border-radius: 8px;
+}
+
+.gps-vehicle-item strong {
+  display: block;
+  margin-bottom: 5px;
+}

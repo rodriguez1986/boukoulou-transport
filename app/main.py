@@ -1,3 +1,8 @@
+from .gps.fleet_api import router as gps_fleet_router
+from .gps.live_api import router as gps_live_router
+from .gps.device_api import router as gps_device_router
+from .gps.phone_api import router as gps_phone_router
+
 from .payment_breakdown import calculer_recettes_par_provider
 import os,uuid
 from contextlib import asynccontextmanager
@@ -7,12 +12,12 @@ from .jwt_startup_diagnostics_step80 import validate_jwt_startup_safely
 from datetime import datetime,timedelta,timezone,date
 from zoneinfo import ZoneInfo
 from io import BytesIO
-# BibliothÃ¨ques pour gÃ©nÃ©rer les rapports Excel.
+# BibliothÃƒÆ’Ã‚Â¨ques pour gÃƒÆ’Ã‚Â©nÃƒÆ’Ã‚Â©rer les rapports Excel.
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table, TableStyleInfo
-# Fin BibliothÃ¨ques pour gÃ©nÃ©rer les rapports Excel.
+# Fin BibliothÃƒÆ’Ã‚Â¨ques pour gÃƒÆ’Ã‚Â©nÃƒÆ’Ã‚Â©rer les rapports Excel.
 import qrcode
 from fastapi import FastAPI,Depends,HTTPException,Query
 from fastapi.responses import StreamingResponse, FileResponse
@@ -30,7 +35,7 @@ from . import login_ip_step84 as ip_throttle
 from . import login_audit_step85 as login_audit
 from fastapi import Request
 from .v59 import router as v59_router, Boarding59, OnboardSale59, Pass59
-# GÃ©nÃ©rateur des rapports financiers PDF.
+# GÃƒÆ’Ã‚Â©nÃƒÆ’Ã‚Â©rateur des rapports financiers PDF.
 from .pdf_reports import generer_rapport_caisse
 from .finance_dashboard import router as finance_router
 from .finance_audit import router as finance_audit_router
@@ -38,7 +43,7 @@ from .finance_audit import router as finance_audit_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Valider les paramÃ¨tres avant toute session ou Ã©criture.
+    # Valider les paramÃƒÆ’Ã‚Â¨tres avant toute session ou ÃƒÆ’Ã‚Â©criture.
     validate_jwt_startup_safely(validate_startup_config, validate_loaded_jwt_runtime_config)
     app.state.login_redis = shared_throttle.validate_redis_config()
     # Conserver le seed explicitement opt-in ; aucune migration implicite.
@@ -48,27 +53,27 @@ async def lifespan(app: FastAPI):
 app=FastAPI(title="Boukoulou Transport",version="1.0.0",lifespan=lifespan)
 app.include_router(v59_router)
 
-# Activer le tableau de bord financier rÃ©servÃ© aux administrateurs.
+# Activer le tableau de bord financier rÃƒÆ’Ã‚Â©servÃƒÆ’Ã‚Â© aux administrateurs.
 app.include_router(finance_router)
-# Activer le contrÃ´le des anomalies financiÃ¨res.
+# Activer le contrÃƒÆ’Ã‚Â´le des anomalies financiÃƒÆ’Ã‚Â¨res.
 app.include_router(finance_audit_router)
 app.mount("/static", StaticFiles(directory="ui"), name="static")
 @app.get("/", include_in_schema=False)
 def frontend():
     return FileResponse("ui/index.html")
-# Ne jamais crÃ©er/modifier les tables pendant l'import de l'API.
-# Les migrations sont gÃ©rÃ©es sÃ©parÃ©ment, aprÃ¨s vÃ©rification et sauvegarde.
+# Ne jamais crÃƒÆ’Ã‚Â©er/modifier les tables pendant l'import de l'API.
+# Les migrations sont gÃƒÆ’Ã‚Â©rÃƒÆ’Ã‚Â©es sÃƒÆ’Ã‚Â©parÃƒÆ’Ã‚Â©ment, aprÃƒÆ’Ã‚Â¨s vÃƒÆ’Ã‚Â©rification et sauvegarde.
 
 def save(db,obj):
  try: db.add(obj); db.commit(); db.refresh(obj); return obj
- except IntegrityError: db.rollback(); raise HTTPException(409,"DonnÃ©e dÃ©jÃ  existante ou incohÃ©rente")
+ except IntegrityError: db.rollback(); raise HTTPException(409,"DonnÃƒÆ’Ã‚Â©e dÃƒÆ’Ã‚Â©jÃƒÆ’Ã‚Â  existante ou incohÃƒÆ’Ã‚Â©rente")
 def audit(db,u,a,t): db.add(Audit(username=u.username,action=a,target=t)); db.commit()
 def seed():
- # AmorÃ§age EXPLICITE rÃ©servÃ© aux environnements de dÃ©veloppement.
- # DÃ©sactivÃ© par dÃ©faut pour Ã©viter des Ã©critures au dÃ©marrage.
+ # AmorÃƒÆ’Ã‚Â§age EXPLICITE rÃƒÆ’Ã‚Â©servÃƒÆ’Ã‚Â© aux environnements de dÃƒÆ’Ã‚Â©veloppement.
+ # DÃƒÆ’Ã‚Â©sactivÃƒÆ’Ã‚Â© par dÃƒÆ’Ã‚Â©faut pour ÃƒÆ’Ã‚Â©viter des ÃƒÆ’Ã‚Â©critures au dÃƒÆ’Ã‚Â©marrage.
  if os.getenv("BOUKOULOU_ENABLE_DEV_SEED") != "1":
   return
- # Ã‰tape 67 : double consentement explicite, jamais de seed en test/production.
+ # ÃƒÆ’Ã¢â‚¬Â°tape 67 : double consentement explicite, jamais de seed en test/production.
  environment = os.getenv("BOUKOULOU_ENV", "").strip().lower()
  if environment != "development":
   raise RuntimeError("Seed interdit : BOUKOULOU_ENV=development est obligatoire")
@@ -90,7 +95,7 @@ def seed():
   if not db.query(Country).filter_by(code="GA").first(): db.add(Country(code="GA",name="Gabon",currency="XAF"))
   db.commit()
  except Exception:
-  # Ã‰chec dâ€™amorÃ§age : annuler la transaction avant de libÃ©rer la session.
+  # ÃƒÆ’Ã¢â‚¬Â°chec dÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢amorÃƒÆ’Ã‚Â§age : annuler la transaction avant de libÃƒÆ’Ã‚Â©rer la session.
   db.rollback()
   raise
  finally:
@@ -99,7 +104,7 @@ def seed():
 def health(): return {"status":"ok"}
 @app.post("/auth/login")
 def login(x:Login,db:Session=Depends(get_db),request:Request=None):
- # RÃ©ponse gÃ©nÃ©rique pour ne pas rÃ©vÃ©ler l'existence d'un compte.
+ # RÃƒÆ’Ã‚Â©ponse gÃƒÆ’Ã‚Â©nÃƒÆ’Ã‚Â©rique pour ne pas rÃƒÆ’Ã‚Â©vÃƒÆ’Ã‚Â©ler l'existence d'un compte.
  try:
   if request is not None and shared_throttle.redis_url():
    blocked = shared_throttle.is_blocked(request.app.state.login_redis,x.username,request) or ip_throttle.redis_is_blocked(request.app.state.login_redis,request)
@@ -110,7 +115,7 @@ def login(x:Login,db:Session=Depends(get_db),request:Request=None):
   raise HTTPException(503,"Service de connexion temporairement indisponible")
  if blocked:
   login_audit.emit("login_blocked",x.username,request)
-  raise HTTPException(429,"Trop de tentatives. RÃ©essayez plus tard.",headers={"Retry-After":"900"})
+  raise HTTPException(429,"Trop de tentatives. RÃƒÆ’Ã‚Â©essayez plus tard.",headers={"Retry-After":"900"})
  u=db.query(User).filter_by(username=x.username).first()
  password_ok = pwd.verify(x.password,u.password_hash) if u and u.is_active else False
  if not u or not u.is_active or not password_ok:
@@ -165,7 +170,7 @@ def admin_security_purge_runs(
     before_id: int | None = Query(None, ge=1),
     admin=Depends(roles("ADMIN")),
 ):
-    """Historique SQL des exÃ©cutions planifiÃ©es, administrateurs uniquement."""
+    """Historique SQL des exÃƒÆ’Ã‚Â©cutions planifiÃƒÆ’Ã‚Â©es, administrateurs uniquement."""
     from .security_alert_purge_history_step92 import recent
     try:
         records = recent(limit=limit, before_id=before_id)
@@ -186,9 +191,9 @@ def users(x:UserIn,u=Depends(roles("ADMIN")),db:Session=Depends(get_db)):
 # ============================================================
 # V5.7 - ADMINISTRATION DES COMPTES
 # ============================================================
-# Les endpoints sont rÃ©servÃ©s Ã  ADMIN, mÃªme si l'interface masque le menu.
-# Chaque changement de droits incrÃ©mente token_version : les anciens JWT
-# deviennent immÃ©diatement inutilisables sur toutes les routes protÃ©gÃ©es.
+# Les endpoints sont rÃƒÆ’Ã‚Â©servÃƒÆ’Ã‚Â©s ÃƒÆ’Ã‚Â  ADMIN, mÃƒÆ’Ã‚Âªme si l'interface masque le menu.
+# Chaque changement de droits incrÃƒÆ’Ã‚Â©mente token_version : les anciens JWT
+# deviennent immÃƒÆ’Ã‚Â©diatement inutilisables sur toutes les routes protÃƒÆ’Ã‚Â©gÃƒÆ’Ã‚Â©es.
 
 from pydantic import BaseModel, Field
 
@@ -210,9 +215,9 @@ def _managed_user(db: Session, user_id: int):
 def change_user_role(user_id: int, data: UserRoleChange,
                      admin=Depends(roles("ADMIN")), db: Session=Depends(get_db)):
     target = _managed_user(db, user_id)
-    # EmpÃªche la perte accidentelle du dernier accÃ¨s admin via son propre compte.
+    # EmpÃƒÆ’Ã‚Âªche la perte accidentelle du dernier accÃƒÆ’Ã‚Â¨s admin via son propre compte.
     if target.id == admin.id and data.role != Role.ADMIN:
-        raise HTTPException(409, "Vous ne pouvez pas retirer votre propre rÃ´le administrateur")
+        raise HTTPException(409, "Vous ne pouvez pas retirer votre propre rÃƒÆ’Ã‚Â´le administrateur")
     previous = target.role.value
     if target.role != data.role:
         target.role = data.role
@@ -228,7 +233,7 @@ def change_user_status(user_id: int, active: bool,
                        admin=Depends(roles("ADMIN")), db: Session=Depends(get_db)):
     target = _managed_user(db, user_id)
     if target.id == admin.id and not active:
-        raise HTTPException(409, "Vous ne pouvez pas dÃ©sactiver votre propre compte")
+        raise HTTPException(409, "Vous ne pouvez pas dÃƒÆ’Ã‚Â©sactiver votre propre compte")
     if target.is_active != active:
         target.is_active = active
         target.token_version += 1
@@ -242,19 +247,19 @@ def change_user_status(user_id: int, active: bool,
 def reset_user_password(user_id: int, data: UserPasswordReset,
                         admin=Depends(roles("ADMIN")), db: Session=Depends(get_db)):
     target = _managed_user(db, user_id)
-    # Ne jamais enregistrer le mot de passe en clair dans l'audit ni la rÃ©ponse.
+    # Ne jamais enregistrer le mot de passe en clair dans l'audit ni la rÃƒÆ’Ã‚Â©ponse.
     target.password_hash = pwd.hash(data.password)
     target.token_version += 1
     db.commit()
     audit(db, admin, "USER_PASSWORD_RESET", target.username)
-    return {"message": "Mot de passe mis Ã  jour ; sessions prÃ©cÃ©dentes invalidÃ©es",
+    return {"message": "Mot de passe mis ÃƒÆ’Ã‚Â  jour ; sessions prÃƒÆ’Ã‚Â©cÃƒÆ’Ã‚Â©dentes invalidÃƒÆ’Ã‚Â©es",
             "id": target.id}
 
 
 @app.get("/users/audit")
 def users_audit(limit: int = 100, admin=Depends(roles("ADMIN")),
                 db: Session=Depends(get_db)):
-    # Limite bornÃ©e pour Ã©viter de charger tout l'historique en mÃ©moire.
+    # Limite bornÃƒÆ’Ã‚Â©e pour ÃƒÆ’Ã‚Â©viter de charger tout l'historique en mÃƒÆ’Ã‚Â©moire.
     limit = max(1, min(limit, 500))
     records = db.query(Audit).order_by(Audit.id.desc()).limit(limit).all()
     return [{"id": a.id, "username": a.username, "action": a.action,
@@ -278,7 +283,7 @@ def line(x:LineIn,u=Depends(roles("ADMIN")),db:Session=Depends(get_db)):
  return save(db,Line(**x.model_dump()))
 @app.get("/lines")
 def lines(u=Depends(roles("ADMIN", "COUNTRY_MANAGER", "AGENT", "CONTROLLER", "DRIVER")), db: Session = Depends(get_db)):
-    # Restreindre les lignes aux responsables nationaux authentifiÃ©s.
+    # Restreindre les lignes aux responsables nationaux authentifiÃƒÆ’Ã‚Â©s.
     query = db.query(Line)
     if u is not None and u.role.value == "COUNTRY_MANAGER":
         if u.country_id is None:
@@ -291,7 +296,7 @@ def vehicle(x:VehicleIn,u=Depends(roles("ADMIN")),db:Session=Depends(get_db)):
  return save(db,Vehicle(**x.model_dump()))
 @app.get("/vehicles")
 def vehicles(u=Depends(roles("ADMIN", "COUNTRY_MANAGER", "AGENT", "CONTROLLER", "DRIVER")), db: Session = Depends(get_db)):
-    # Restreindre les vÃ©hicules aux responsables nationaux authentifiÃ©s.
+    # Restreindre les vÃƒÆ’Ã‚Â©hicules aux responsables nationaux authentifiÃƒÆ’Ã‚Â©s.
     query = db.query(Vehicle)
     if u is not None and u.role.value == "COUNTRY_MANAGER":
         if u.country_id is None:
@@ -312,7 +317,7 @@ def get_vehicle(
     v = db.get(Vehicle, vehicle_id)
 
     if not v:
-        raise HTTPException(404, "VÃ©hicule introuvable")
+        raise HTTPException(404, "VÃƒÆ’Ã‚Â©hicule introuvable")
 
     return v
 
@@ -327,7 +332,7 @@ def update_vehicle(
     v = db.get(Vehicle, vehicle_id)
 
     if not v:
-        raise HTTPException(404, "VÃ©hicule introuvable")
+        raise HTTPException(404, "VÃƒÆ’Ã‚Â©hicule introuvable")
 
     data = x.model_dump(exclude_unset=True)
 
@@ -345,7 +350,7 @@ def update_vehicle(
         db.rollback()
         raise HTTPException(
             409,
-            "Code vÃ©hicule ou plaque dÃ©jÃ  utilisÃ©"
+            "Code vÃƒÆ’Ã‚Â©hicule ou plaque dÃƒÆ’Ã‚Â©jÃƒÆ’Ã‚Â  utilisÃƒÆ’Ã‚Â©"
         )
 
     audit(db, u, "UPDATE_VEHICLE", v.code)
@@ -384,7 +389,7 @@ def create_driver(
         db.rollback()
         raise HTTPException(
             409,
-            "Matricule ou numÃ©ro de permis dÃ©jÃ  utilisÃ©"
+            "Matricule ou numÃƒÆ’Ã‚Â©ro de permis dÃƒÆ’Ã‚Â©jÃƒÆ’Ã‚Â  utilisÃƒÆ’Ã‚Â©"
         )
 
     audit(db, u, "CREATE_DRIVER", driver.employee_code)
@@ -434,7 +439,7 @@ def update_driver(
         db.rollback()
         raise HTTPException(
             409,
-            "Matricule ou numÃ©ro de permis dÃ©jÃ  utilisÃ©"
+            "Matricule ou numÃƒÆ’Ã‚Â©ro de permis dÃƒÆ’Ã‚Â©jÃƒÆ’Ã‚Â  utilisÃƒÆ’Ã‚Â©"
         )
 
     audit(db, u, "UPDATE_DRIVER", driver.employee_code)
@@ -489,7 +494,7 @@ def create_driver_assignment(
     vehicle = db.get(Vehicle, x.vehicle_id)
 
     if not vehicle:
-        raise HTTPException(404, "VÃ©hicule introuvable")
+        raise HTTPException(404, "VÃƒÆ’Ã‚Â©hicule introuvable")
 
     if driver.status != "ACTIVE":
         raise HTTPException(
@@ -500,7 +505,7 @@ def create_driver_assignment(
     if vehicle.status != "ACTIVE":
         raise HTTPException(
             409,
-            "Le vÃ©hicule n'est pas actif"
+            "Le vÃƒÆ’Ã‚Â©hicule n'est pas actif"
         )
 
     # Un chauffeur ne peut avoir qu'une affectation active.
@@ -516,10 +521,10 @@ def create_driver_assignment(
     if existing_driver:
         raise HTTPException(
             409,
-            "Ce chauffeur possÃ¨de dÃ©jÃ  une affectation active"
+            "Ce chauffeur possÃƒÆ’Ã‚Â¨de dÃƒÆ’Ã‚Â©jÃƒÆ’Ã‚Â  une affectation active"
         )
 
-    # Un vÃ©hicule ne peut avoir qu'un chauffeur actif.
+    # Un vÃƒÆ’Ã‚Â©hicule ne peut avoir qu'un chauffeur actif.
     existing_vehicle = (
         db.query(DriverAssignment)
         .filter(
@@ -532,7 +537,7 @@ def create_driver_assignment(
     if existing_vehicle:
         raise HTTPException(
             409,
-            "Ce vÃ©hicule possÃ¨de dÃ©jÃ  un chauffeur actif"
+            "Ce vÃƒÆ’Ã‚Â©hicule possÃƒÆ’Ã‚Â¨de dÃƒÆ’Ã‚Â©jÃƒÆ’Ã‚Â  un chauffeur actif"
         )
 
     assignment = DriverAssignment(
@@ -576,7 +581,7 @@ def end_driver_assignment(
     if not assignment.active:
         raise HTTPException(
             409,
-            "Cette affectation est dÃ©jÃ  terminÃ©e"
+            "Cette affectation est dÃƒÆ’Ã‚Â©jÃƒÆ’Ã‚Â  terminÃƒÆ’Ã‚Â©e"
         )
 
     assignment.active = False
@@ -618,12 +623,12 @@ def create_trip(
     vehicle = db.get(Vehicle, x.vehicle_id)
 
     if not vehicle:
-        raise HTTPException(404, "VÃ©hicule introuvable")
+        raise HTTPException(404, "VÃƒÆ’Ã‚Â©hicule introuvable")
 
     if vehicle.status != "ACTIVE":
         raise HTTPException(
             409,
-            f"Le vÃ©hicule n'est pas disponible : {vehicle.status}"
+            f"Le vÃƒÆ’Ã‚Â©hicule n'est pas disponible : {vehicle.status}"
         )
     # ========================================================
     # SECURITE : COHERENCE GEOGRAPHIQUE DU VEHICULE
@@ -737,7 +742,7 @@ def list_trips(
     u=Depends(roles("ADMIN", "COUNTRY_MANAGER", "AGENT", "CONTROLLER", "DRIVER")),
     db: Session = Depends(get_db)
 ):
-    # Filtrer par pays sans changer les accÃ¨s des autres rÃ´les.
+    # Filtrer par pays sans changer les accÃƒÆ’Ã‚Â¨s des autres rÃƒÆ’Ã‚Â´les.
         # ============================================================
     # SECURITE : FILTRAGE DES COURSES SELON LE ROLE
     # ============================================================
@@ -832,7 +837,7 @@ def get_trip(
     if not trip:
         raise HTTPException(404, "Course introuvable")
 
-    # ContrÃ´le territorial avant de rÃ©vÃ©ler les donnÃ©es de la course.
+    # ContrÃƒÆ’Ã‚Â´le territorial avant de rÃƒÆ’Ã‚Â©vÃƒÆ’Ã‚Â©ler les donnÃƒÆ’Ã‚Â©es de la course.
     if u.role.value == "COUNTRY_MANAGER":
         if u.country_id is None:
             raise HTTPException(status_code=403, detail="Responsable national sans pays d'affectation")
@@ -888,17 +893,17 @@ def start_trip(
     if trip.status != "SCHEDULED":
         raise HTTPException(
             409,
-            f"Impossible de dÃ©marrer une course {trip.status}"
+            f"Impossible de dÃƒÆ’Ã‚Â©marrer une course {trip.status}"
         )
         # --------------------------------------------------------
-    # V5.1 - Protection contre un dÃ©part trop anticipÃ©
+    # V5.1 - Protection contre un dÃƒÆ’Ã‚Â©part trop anticipÃƒÆ’Ã‚Â©
     # --------------------------------------------------------
 
     now_utc = datetime.now(timezone.utc)
 
     scheduled_departure = trip.departure_at
 
-    # SÃ©curitÃ© au cas oÃ¹ la date rÃ©cupÃ©rÃ©e serait sans timezone
+    # SÃƒÆ’Ã‚Â©curitÃƒÆ’Ã‚Â© au cas oÃƒÆ’Ã‚Â¹ la date rÃƒÆ’Ã‚Â©cupÃƒÆ’Ã‚Â©rÃƒÆ’Ã‚Â©e serait sans timezone
     if scheduled_departure.tzinfo is None:
         scheduled_departure = scheduled_departure.replace(
             tzinfo=timezone.utc
@@ -911,7 +916,7 @@ def start_trip(
             status_code=409,
             detail={
                 "code": "TRIP_TOO_EARLY",
-                "message": "Cette course ne peut pas encore Ãªtre dÃ©marrÃ©e",
+                "message": "Cette course ne peut pas encore ÃƒÆ’Ã‚Âªtre dÃƒÆ’Ã‚Â©marrÃƒÆ’Ã‚Â©e",
                 "scheduled_departure": scheduled_departure.isoformat(),
                 "earliest_start": earliest_start.isoformat()
             }
@@ -932,18 +937,18 @@ def start_trip(
     )
 
     if not vehicle:
-        raise HTTPException(404, "VÃ©hicule introuvable")
+        raise HTTPException(404, "VÃƒÆ’Ã‚Â©hicule introuvable")
 
     if vehicle.status != "ACTIVE":
         raise HTTPException(
             409,
-            f"VÃ©hicule indisponible : {vehicle.status}"
+            f"VÃƒÆ’Ã‚Â©hicule indisponible : {vehicle.status}"
         )
 
     if trip.driver_id is None:
         raise HTTPException(
             409,
-            "Aucun chauffeur n'est affectÃ© Ã  cette course"
+            "Aucun chauffeur n'est affectÃƒÆ’Ã‚Â© ÃƒÆ’Ã‚Â  cette course"
         )
 
     # ========================================================
@@ -1013,10 +1018,10 @@ def start_trip(
     if x.start_mileage < vehicle.mileage:
         raise HTTPException(
             409,
-            f"KilomÃ©trage infÃ©rieur au compteur actuel ({vehicle.mileage} km)"
+            f"KilomÃƒÆ’Ã‚Â©trage infÃƒÆ’Ã‚Â©rieur au compteur actuel ({vehicle.mileage} km)"
         )
 
-    # EmpÃªche le mÃªme vÃ©hicule d'effectuer deux courses simultanÃ©ment.
+    # EmpÃƒÆ’Ã‚Âªche le mÃƒÆ’Ã‚Âªme vÃƒÆ’Ã‚Â©hicule d'effectuer deux courses simultanÃƒÆ’Ã‚Â©ment.
     vehicle_busy = (
         db.query(Trip)
         .filter(
@@ -1030,10 +1035,10 @@ def start_trip(
     if vehicle_busy:
         raise HTTPException(
             409,
-            f"Le vÃ©hicule est dÃ©jÃ  sur la course #{vehicle_busy.id}"
+            f"Le vÃƒÆ’Ã‚Â©hicule est dÃƒÆ’Ã‚Â©jÃƒÆ’Ã‚Â  sur la course #{vehicle_busy.id}"
         )
 
-    # EmpÃªche le mÃªme chauffeur d'effectuer deux courses simultanÃ©ment.
+    # EmpÃƒÆ’Ã‚Âªche le mÃƒÆ’Ã‚Âªme chauffeur d'effectuer deux courses simultanÃƒÆ’Ã‚Â©ment.
     driver_busy = (
         db.query(Trip)
         .filter(
@@ -1047,7 +1052,7 @@ def start_trip(
     if driver_busy:
         raise HTTPException(
             409,
-            f"Le chauffeur est dÃ©jÃ  sur la course #{driver_busy.id}"
+            f"Le chauffeur est dÃƒÆ’Ã‚Â©jÃƒÆ’Ã‚Â  sur la course #{driver_busy.id}"
         )
 
     trip.start_mileage = x.start_mileage
@@ -1154,19 +1159,19 @@ def complete_trip(
     if trip.status != "IN_PROGRESS":
         raise HTTPException(
             409,
-            "Seule une course en cours peut Ãªtre terminÃ©e"
+            "Seule une course en cours peut ÃƒÆ’Ã‚Âªtre terminÃƒÆ’Ã‚Â©e"
         )
 
     if trip.start_mileage is None:
         raise HTTPException(
             409,
-            "KilomÃ©trage de dÃ©part absent"
+            "KilomÃƒÆ’Ã‚Â©trage de dÃƒÆ’Ã‚Â©part absent"
         )
 
     if x.end_mileage < trip.start_mileage:
         raise HTTPException(
             409,
-            "Le kilomÃ©trage d'arrivÃ©e ne peut pas Ãªtre infÃ©rieur au dÃ©part"
+            "Le kilomÃƒÆ’Ã‚Â©trage d'arrivÃƒÆ’Ã‚Â©e ne peut pas ÃƒÆ’Ã‚Âªtre infÃƒÆ’Ã‚Â©rieur au dÃƒÆ’Ã‚Â©part"
         )
 
     # ========================================================
@@ -1351,14 +1356,14 @@ def cancel_trip(
     if trip.status == "COMPLETED":
         raise HTTPException(
             409,
-            "Une course terminÃ©e ne peut pas Ãªtre annulÃ©e"
+            "Une course terminÃƒÆ’Ã‚Â©e ne peut pas ÃƒÆ’Ã‚Âªtre annulÃƒÆ’Ã‚Â©e"
         )
 
 
     if trip.status == "CANCELLED":
         raise HTTPException(
             409,
-            "Cette course est dÃ©jÃ  annulÃ©e"
+            "Cette course est dÃƒÆ’Ã‚Â©jÃƒÆ’Ã‚Â  annulÃƒÆ’Ã‚Â©e"
         )
     # ========================================================
     # BOUKOULOU TRANSPORT V5.9 - ETAPE 93.4.9.7.30
@@ -1494,16 +1499,16 @@ def trip_report(
 
 
 # ============================================================
-# V5.8 - CAPACITÃ‰ DES BUS ET DISPONIBILITÃ‰ DES PLACES
+# V5.8 - CAPACITÃƒÆ’Ã¢â‚¬Â° DES BUS ET DISPONIBILITÃƒÆ’Ã¢â‚¬Â° DES PLACES
 # ============================================================
-# Un billet PENDING non expirÃ© rÃ©serve une place pendant 12 heures.
-# Les billets PAID et USED occupent Ã©galement une place.
-# CANCELLED, EXPIRED et PENDING expirÃ©s ne sont pas comptabilisÃ©s.
-# Le verrou PostgreSQL sur la course empÃªche deux agents de vendre
-# simultanÃ©ment la derniÃ¨re place disponible.
+# Un billet PENDING non expirÃƒÆ’Ã‚Â© rÃƒÆ’Ã‚Â©serve une place pendant 12 heures.
+# Les billets PAID et USED occupent ÃƒÆ’Ã‚Â©galement une place.
+# CANCELLED, EXPIRED et PENDING expirÃƒÆ’Ã‚Â©s ne sont pas comptabilisÃƒÆ’Ã‚Â©s.
+# Le verrou PostgreSQL sur la course empÃƒÆ’Ã‚Âªche deux agents de vendre
+# simultanÃƒÆ’Ã‚Â©ment la derniÃƒÆ’Ã‚Â¨re place disponible.
 
 def _places_occupees(db: Session, trip_id: int, instant: datetime) -> int:
-    # V5.9 : ajouter les voyages dÃ©jÃ  validÃ©s sur cette course.
+    # V5.9 : ajouter les voyages dÃƒÆ’Ã‚Â©jÃƒÆ’Ã‚Â  validÃƒÆ’Ã‚Â©s sur cette course.
     nouveaux = db.query(func.count(Boarding59.id)).filter(Boarding59.trip_id == trip_id).scalar() or 0
     anciens = (
         db.query(func.count(Ticket.id))
@@ -1537,7 +1542,7 @@ def trip_availability(trip_id: int, u=Depends(roles("ADMIN", "AGENT", "CONTROLLE
 
     trip = verifier_acces_course(db, u, trip_id)
 
-    # V5.8 : addition des places assises et des places debout autorisÃ©es.
+    # V5.8 : addition des places assises et des places debout autorisÃƒÆ’Ã‚Â©es.
     capacity = trip.vehicle.capacity + trip.vehicle.standing_capacity
     occupied = _places_occupees(db, trip.id, datetime.now(timezone.utc))
     return {"trip_id": trip.id, "capacity": capacity,
@@ -1550,7 +1555,7 @@ def trip_availability(trip_id: int, u=Depends(roles("ADMIN", "AGENT", "CONTROLLE
 @app.post("/tickets")
 def ticket(x: TicketIn, u=Depends(roles("ADMIN", "AGENT", "CONTROLLER")),
            db: Session = Depends(get_db)):
-    # V5.9 : crÃ©ation directe par course dÃ©sactivÃ©e ; utiliser le stock ADMIN.
+    # V5.9 : crÃƒÆ’Ã‚Â©ation directe par course dÃƒÆ’Ã‚Â©sactivÃƒÆ’Ã‚Â©e ; utiliser le stock ADMIN.
     raise HTTPException(410, "Utilisez la billetterie V5.9 : stock ADMIN, vente AGENT")
 @app.get("/tickets")
 def list_tickets(
@@ -1592,17 +1597,17 @@ def payment(
     u=Depends(roles("ADMIN", "AGENT")),
     db: Session = Depends(get_db)
 ):
-    # V5.9 : ancien paiement dÃ©sactivÃ©.
+    # V5.9 : ancien paiement dÃƒÆ’Ã‚Â©sactivÃƒÆ’Ã‚Â©.
     # La billetterie actuelle utilise les ventes V5.9.
     # Ne jamais confirmer un paiement via simulate_success.
     raise HTTPException(
         status_code=410,
-        detail="Ancien paiement dÃ©sactivÃ© : utilisez la billetterie V5.9"
+        detail="Ancien paiement dÃƒÆ’Ã‚Â©sactivÃƒÆ’Ã‚Â© : utilisez la billetterie V5.9"
     )
 
 @app.post("/gps")
 def gps(x:GPSIn,u=Depends(roles("ADMIN","DRIVER")),db:Session=Depends(get_db)):
- if not db.get(Vehicle,x.vehicle_id): raise HTTPException(404,"VÃ©hicule introuvable")
+ if not db.get(Vehicle,x.vehicle_id): raise HTTPException(404,"VÃƒÆ’Ã‚Â©hicule introuvable")
  return save(db,GPSPosition(**x.model_dump()))
 @app.get("/gps/{vehicle_id}/latest")
 def latest(vehicle_id:int,u=Depends(roles("ADMIN","CONTROLLER","DRIVER")),db:Session=Depends(get_db)): return db.query(GPSPosition).filter_by(vehicle_id=vehicle_id).order_by(GPSPosition.recorded_at.desc()).first()
@@ -1933,7 +1938,7 @@ def create_fuel(
     vehicle = db.get(Vehicle, x.vehicle_id)
 
     if not vehicle:
-        raise HTTPException(404, "VÃ©hicule introuvable")
+        raise HTTPException(404, "VÃƒÆ’Ã‚Â©hicule introuvable")
 
     if x.driver_id is not None:
         driver = db.get(Driver, x.driver_id)
@@ -2091,14 +2096,14 @@ def dashboard(
         .scalar()
     ) or 0
 
-    # Calculer les recettes des ventes Ã  bord.
+    # Calculer les recettes des ventes ÃƒÆ’Ã‚Â  bord.
     onboard_revenue = (
         db.query(func.coalesce(func.sum(OnboardSale59.total_amount), 0))
         .scalar()
     ) or 0
 
     # Calculer les recettes des ventes au guichet.
-    # Les ventes Ã  bord sont exclues pour Ã©viter le double comptage.
+    # Les ventes ÃƒÆ’Ã‚Â  bord sont exclues pour ÃƒÆ’Ã‚Â©viter le double comptage.
     agency_revenue = calculate_agency_revenue(db)
 
     # Additionner les trois sources de recettes.
@@ -2110,8 +2115,8 @@ def dashboard(
         + db.query(Pass59).count()
     )
 
-    # Compter les billets classiques utilisÃ©s et les embarquements V5.9.
-    # Pour V5.9, chaque embarquement reprÃ©sente un voyage consommÃ©.
+    # Compter les billets classiques utilisÃƒÆ’Ã‚Â©s et les embarquements V5.9.
+    # Pour V5.9, chaque embarquement reprÃƒÆ’Ã‚Â©sente un voyage consommÃƒÆ’Ã‚Â©.
     tickets_used = (
         db.query(Ticket)
         .filter_by(status=TicketStatus.USED)
@@ -2148,7 +2153,7 @@ CASH_TZ = ZoneInfo("Africa/Brazzaville")
 
 def cash_day_bounds(day: date):
     """
-    Transforme une journÃ©e locale Congo/Gabon en bornes UTC.
+    Transforme une journÃƒÆ’Ã‚Â©e locale Congo/Gabon en bornes UTC.
     Exemple :
     07/10/2026 00:00 locale -> 06/10/2026 23:00 UTC
     """
@@ -2168,14 +2173,14 @@ def cash_day_bounds(day: date):
 
 # ============================================================
 # V5.9 - INDICATEURS DU MENU CAISSE UNIQUEMENT
-# Les autres tableaux de bord et les sessions restent inchangÃ©s.
+# Les autres tableaux de bord et les sessions restent inchangÃƒÆ’Ã‚Â©s.
 # ============================================================
 
 def _cash_ventes_v59(db: Session, selected_day: date, user):
-    """Lire les ventes V5.9 du jour, sans compter deux fois les ventes Ã  bord."""
+    """Lire les ventes V5.9 du jour, sans compter deux fois les ventes ÃƒÆ’Ã‚Â  bord."""
     start_utc, end_utc = cash_day_bounds(selected_day)
 
-    # Une vente Ã  bord possÃ¨de Ã©galement un Pass59 : l'exclure du guichet.
+    # Une vente ÃƒÆ’Ã‚Â  bord possÃƒÆ’Ã‚Â¨de ÃƒÆ’Ã‚Â©galement un Pass59 : l'exclure du guichet.
     passes_vendus_bord = db.query(OnboardSale59.pass_id)
     guichet = db.query(Pass59).filter(
         ~Pass59.id.in_(passes_vendus_bord),
@@ -2189,7 +2194,7 @@ def _cash_ventes_v59(db: Session, selected_day: date, user):
         Pass59.sold_at < end_utc,
     )
 
-    # PrÃ©server la restriction d'accÃ¨s aux propres ventes des agents.
+    # PrÃƒÆ’Ã‚Â©server la restriction d'accÃƒÆ’Ã‚Â¨s aux propres ventes des agents.
     if user.role.value == "AGENT":
         guichet = guichet.filter(Pass59.agent_id == user.id)
         bord = bord.filter(OnboardSale59.controller_id == user.id)
@@ -2198,16 +2203,16 @@ def _cash_ventes_v59(db: Session, selected_day: date, user):
 
 
 def _cash_details_v59(db: Session, guichet, bord):
-    """Construire les transactions avec les clÃ©s attendues par le frontend."""
+    """Construire les transactions avec les clÃƒÆ’Ã‚Â©s attendues par le frontend."""
     details = []
-    # PrÃ©charger les lignes et les courses utilisÃ©es pour limiter les requÃªtes.
+    # PrÃƒÆ’Ã‚Â©charger les lignes et les courses utilisÃƒÆ’Ã‚Â©es pour limiter les requÃƒÆ’Ã‚Âªtes.
     trip_ids = {vente.trip_id for vente, _ in bord if vente.trip_id is not None}
     trips = {t.id: t for t in db.query(Trip).filter(Trip.id.in_(trip_ids)).all()} if trip_ids else {}
     line_ids = {t.line_id for t in trips.values() if t.line_id is not None}
     lines = {l.id: l for l in db.query(Line).filter(Line.id.in_(line_ids)).all()} if line_ids else {}
 
     for passage in guichet:
-        # Les pass guichet ne sont pas liÃ©s Ã  une course Ã  la vente.
+        # Les pass guichet ne sont pas liÃƒÆ’Ã‚Â©s ÃƒÆ’Ã‚Â  une course ÃƒÆ’Ã‚Â  la vente.
         details.append({
             "payment_id": passage.id,
             "user_id": passage.agent_id,
@@ -2221,8 +2226,8 @@ def _cash_details_v59(db: Session, guichet, bord):
             "ticket_code": passage.code,
             "trip_id": None,
             "line_id": None,
-            "line_code": "â€”",
-            "line_name": "Non attribuÃ©e",
+            "line_code": "ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â",
+            "line_name": "Non attribuÃƒÆ’Ã‚Â©e",
         })
 
     for vente, passage in bord:
@@ -2234,7 +2239,7 @@ def _cash_details_v59(db: Session, guichet, bord):
             "cash_session_id": vente.cash_session_id,
             "reference": passage.reference,
             "provider": "BORD",
-            # Le montant calculÃ© inclut les frais historiques enregistrÃ©s.
+            # Le montant calculÃƒÆ’Ã‚Â© inclut les frais historiques enregistrÃƒÆ’Ã‚Â©s.
             "amount": int(vente.total_amount or 0),
             "payment_status": "SUCCESS",
             "paid_at": passage.sold_at,
@@ -2242,11 +2247,11 @@ def _cash_details_v59(db: Session, guichet, bord):
             "ticket_code": passage.code,
             "trip_id": trip.id if trip else None,
             "line_id": line.id if line else None,
-            "line_code": line.code if line else "â€”",
-            "line_name": line.name if line else "Non attribuÃ©e",
+            "line_code": line.code if line else "ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â",
+            "line_name": line.name if line else "Non attribuÃƒÆ’Ã‚Â©e",
         })
 
-    # Normaliser la comparaison des dates pour Ã©viter les mÃ©langes naÃ¯f/UTC.
+    # Normaliser la comparaison des dates pour ÃƒÆ’Ã‚Â©viter les mÃƒÆ’Ã‚Â©langes naÃƒÆ’Ã‚Â¯f/UTC.
     def ordre(item):
         instant = item["paid_at"]
         if instant is None:
@@ -2272,10 +2277,10 @@ def cash_daily(
     noms = {u.id: u.username for u in db.query(User).all()}
 
     def ajouter(agent_id, montant):
-        # Ici Â« paiements Â» signifie opÃ©rations de vente encaissÃ©es.
+        # Ici Ãƒâ€šÃ‚Â« paiements Ãƒâ€šÃ‚Â» signifie opÃƒÆ’Ã‚Â©rations de vente encaissÃƒÆ’Ã‚Â©es.
         if agent_id not in providers:
             providers[agent_id] = {
-                "provider": noms.get(agent_id, "Non renseignÃ©" if agent_id is None else f"Utilisateur #{agent_id}"),
+                "provider": noms.get(agent_id, "Non renseignÃƒÆ’Ã‚Â©" if agent_id is None else f"Utilisateur #{agent_id}"),
                 "payments": 0,
                 "revenue": 0,
             }
@@ -2295,7 +2300,7 @@ def cash_daily(
         billets += int(passage.quantity or 0)
         ajouter(vente.controller_id, montant)
 
-    # Une course est encaissÃ©e si elle a au moins une vente Ã  bord attribuÃ©e.
+    # Une course est encaissÃƒÆ’Ã‚Â©e si elle a au moins une vente ÃƒÆ’Ã‚Â  bord attribuÃƒÆ’Ã‚Â©e.
     courses = {vente.trip_id for vente, _ in bord if vente.trip_id is not None}
     return {
         "date": selected_day.isoformat(),
@@ -2326,7 +2331,7 @@ def cash_by_line(
     db: Session = Depends(get_db),
     user=Depends(roles("ADMIN", "AGENT")),
 ):
-    """Regrouper les ventes Ã  bord par ligne (guichet non attribuable)."""
+    """Regrouper les ventes ÃƒÆ’Ã‚Â  bord par ligne (guichet non attribuable)."""
     selected_day = day or datetime.now(CASH_TZ).date()
     _, bord = _cash_ventes_v59(db, selected_day, user)
     lignes = {}
@@ -2351,7 +2356,7 @@ def cash_by_trip(
     db: Session = Depends(get_db),
     user=Depends(roles("ADMIN", "AGENT")),
 ):
-    """Regrouper les ventes Ã  bord par course (guichet non attribuable)."""
+    """Regrouper les ventes ÃƒÆ’Ã‚Â  bord par course (guichet non attribuable)."""
     selected_day = day or datetime.now(CASH_TZ).date()
     _, bord = _cash_ventes_v59(db, selected_day, user)
     courses = {}
@@ -2363,8 +2368,8 @@ def cash_by_trip(
         if trip.id not in courses:
             courses[trip.id] = {
                 "trip_id": trip.id, "departure_at": trip.departure_at,
-                "line_code": line.code if line else "â€”",
-                "line_name": line.name if line else "Non attribuÃ©e",
+                "line_code": line.code if line else "ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â",
+                "line_name": line.name if line else "Non attribuÃƒÆ’Ã‚Â©e",
                 "tickets": 0, "revenue": 0,
             }
         courses[trip.id]["tickets"] += int(passage.quantity or 0)
@@ -2392,7 +2397,7 @@ def open_cash_session(
             status_code=409,
             detail={
                 "code": "CASH_ALREADY_OPEN",
-                "message": "Une caisse est dÃ©jÃ  ouverte pour cet utilisateur"
+                "message": "Une caisse est dÃƒÆ’Ã‚Â©jÃƒÆ’Ã‚Â  ouverte pour cet utilisateur"
             }
         )
 
@@ -2408,16 +2413,16 @@ def open_cash_session(
         db.commit()
     except IntegrityError as exc:
         db.rollback()
-        # Un index unique partiel en base doit empÃªcher deux caisses
-        # ouvertes simultanÃ©ment pour le mÃªme utilisateur.
-        # Ne pas confondre ce conflit avec une autre erreur d'intÃ©gritÃ©.
+        # Un index unique partiel en base doit empÃƒÆ’Ã‚Âªcher deux caisses
+        # ouvertes simultanÃƒÆ’Ã‚Â©ment pour le mÃƒÆ’Ã‚Âªme utilisateur.
+        # Ne pas confondre ce conflit avec une autre erreur d'intÃƒÆ’Ã‚Â©gritÃƒÆ’Ã‚Â©.
         constraint = getattr(getattr(exc.orig, "diag", None), "constraint_name", None)
         if constraint == "ux_cash_sessions_one_open_per_user":
             raise HTTPException(
                 status_code=409,
                 detail={
                     "code": "CASH_ALREADY_OPEN",
-                    "message": "Une caisse est dÃ©jÃ  ouverte pour cet utilisateur"
+                    "message": "Une caisse est dÃƒÆ’Ã‚Â©jÃƒÆ’Ã‚Â  ouverte pour cet utilisateur"
                 }
             ) from exc
         raise
@@ -2479,7 +2484,7 @@ def current_cash_session(
         cash_session_id=session.id
     )
 
-    # Calculer les recettes des ventes Ã  bord V5.9.
+    # Calculer les recettes des ventes ÃƒÆ’Ã‚Â  bord V5.9.
     onboard_revenue = (
       db.query(
         func.coalesce(func.sum(OnboardSale59.total_amount), 0)
@@ -2490,7 +2495,7 @@ def current_cash_session(
       .scalar()
     ) or 0
 
-    # RÃ©cupÃ©rer les recettes des paiements classiques.
+    # RÃƒÆ’Ã‚Â©cupÃƒÆ’Ã‚Â©rer les recettes des paiements classiques.
     payment_revenue = revenue or 0
 
     # Additionner les trois sources de recettes.
@@ -2500,30 +2505,30 @@ def current_cash_session(
         + onboard_revenue
     )
 
-    # RÃ©partir les recettes selon le moyen de paiement.
-    # Cette fonction inclut les ventes au guichet, Ã  bord
+    # RÃƒÆ’Ã‚Â©partir les recettes selon le moyen de paiement.
+    # Cette fonction inclut les ventes au guichet, ÃƒÆ’Ã‚Â  bord
     # et les paiements classiques, sans compter deux fois les billets.
     recettes_par_provider = calculer_recettes_par_provider(
         db,
         cash_session_id=session.id
     )
 
-    # Calculer uniquement les recettes encaissÃ©es en espÃ¨ces.
+    # Calculer uniquement les recettes encaissÃƒÆ’Ã‚Â©es en espÃƒÆ’Ã‚Â¨ces.
     cash_revenue = recettes_par_provider.get("CASH", 0)
 
-    # Le montant thÃ©orique de la caisse physique correspond
-    # au fonds initial augmentÃ© des encaissements en espÃ¨ces.
+    # Le montant thÃƒÆ’Ã‚Â©orique de la caisse physique correspond
+    # au fonds initial augmentÃƒÆ’Ã‚Â© des encaissements en espÃƒÆ’Ã‚Â¨ces.
     expected_amount = session.opening_amount + cash_revenue
 
     # Compter les billets vendus pendant cette session de caisse.
-    # Les ventes au guichet et Ã  bord sont dÃ©jÃ  enregistrÃ©es dans v59_passes.
+    # Les ventes au guichet et ÃƒÆ’Ã‚Â  bord sont dÃƒÆ’Ã‚Â©jÃƒÆ’Ã‚Â  enregistrÃƒÆ’Ã‚Â©es dans v59_passes.
     billets_vendus = (
         db.query(func.count(Pass59.id))
         .filter(Pass59.cash_session_id == session.id)
         .scalar()
     ) or 0
 
-    # Retourner les informations actualisÃ©es de la caisse ouverte.
+    # Retourner les informations actualisÃƒÆ’Ã‚Â©es de la caisse ouverte.
     return {
         "open": True,
         "session": {
@@ -2552,7 +2557,7 @@ def close_cash_session(
     user = Depends(roles("ADMIN", "AGENT","CONTROLLER", "DRIVER"))
 ):
     # Verrouillage PostgreSQL de la ligne jusqu'au commit/rollback.
-    # Une seconde clÃ´ture attend la premiÃ¨re, puis constate CLOSED (409).
+    # Une seconde clÃƒÆ’Ã‚Â´ture attend la premiÃƒÆ’Ã‚Â¨re, puis constate CLOSED (409).
     session = db.query(CashSession).filter(
         CashSession.id == session_id
     ).with_for_update().first()
@@ -2563,8 +2568,8 @@ def close_cash_session(
             detail="Session de caisse introuvable"
         )
 
-    # L'agent ne peut clÃ´turer que sa propre caisse.
-    # Un ADMIN peut clÃ´turer une autre caisse.
+    # L'agent ne peut clÃƒÆ’Ã‚Â´turer que sa propre caisse.
+    # Un ADMIN peut clÃƒÆ’Ã‚Â´turer une autre caisse.
     role_value = (
         user.role.value
         if hasattr(user.role, "value")
@@ -2574,7 +2579,7 @@ def close_cash_session(
     if session.user_id != user.id and role_value != "ADMIN":
         raise HTTPException(
             status_code=403,
-            detail="Vous ne pouvez pas clÃ´turer cette caisse"
+            detail="Vous ne pouvez pas clÃƒÆ’Ã‚Â´turer cette caisse"
         )
 
     if session.status != "OPEN":
@@ -2582,7 +2587,7 @@ def close_cash_session(
             status_code=409,
             detail={
                 "code": "CASH_ALREADY_CLOSED",
-                "message": "Cette caisse est dÃ©jÃ  clÃ´turÃ©e"
+                "message": "Cette caisse est dÃƒÆ’Ã‚Â©jÃƒÆ’Ã‚Â  clÃƒÆ’Ã‚Â´turÃƒÆ’Ã‚Â©e"
             }
         )
 
@@ -2604,25 +2609,25 @@ def close_cash_session(
     ) or 0
 
     # Calculer les recettes des billets vendus au guichet.
-    # Les billets vendus Ã  bord sont exclus pour Ã©viter le double comptage.
+    # Les billets vendus ÃƒÆ’Ã‚Â  bord sont exclus pour ÃƒÆ’Ã‚Â©viter le double comptage.
     agency_revenue = calculate_agency_revenue(
         db,
         cash_session_id=session.id
     )
 
-    # SÃ©parer les recettes selon le moyen de paiement.
+    # SÃƒÆ’Ã‚Â©parer les recettes selon le moyen de paiement.
     recettes_par_provider = calculer_recettes_par_provider(
         db,
         cash_session_id=session.id
     )
 
-    # Seules les espÃ¨ces entrent dans la caisse physique.
+    # Seules les espÃƒÆ’Ã‚Â¨ces entrent dans la caisse physique.
     cash_revenue = recettes_par_provider.get("CASH", 0)
 
     # Total commercial, tous moyens de paiement confondus.
     total_revenue = sum(recettes_par_provider.values())
 
-    # Fonds initial + ventes rÃ©ellement encaissÃ©es en espÃ¨ces.
+    # Fonds initial + ventes rÃƒÆ’Ã‚Â©ellement encaissÃƒÆ’Ã‚Â©es en espÃƒÆ’Ã‚Â¨ces.
     expected = session.opening_amount + cash_revenue
 
     session.expected_amount = expected
@@ -2634,8 +2639,8 @@ def close_cash_session(
     if data.notes is not None:
         session.notes = data.notes
 
-    # ClÃ´ture et journal d'audit dans une seule transaction.
-    # Si l'audit Ã©choue, la clÃ´ture n'est pas validÃ©e en base.
+    # ClÃƒÆ’Ã‚Â´ture et journal d'audit dans une seule transaction.
+    # Si l'audit ÃƒÆ’Ã‚Â©choue, la clÃƒÆ’Ã‚Â´ture n'est pas validÃƒÆ’Ã‚Â©e en base.
     try:
         db.add(Audit(
             username=user.username,
@@ -2654,7 +2659,7 @@ def close_cash_session(
         "opened_at": session.opened_at,
         "closed_at": session.closed_at,
         "opening_amount": session.opening_amount,
-        # Retourner le dÃ©tail des recettes de la caisse.
+        # Retourner le dÃƒÆ’Ã‚Â©tail des recettes de la caisse.
         "sales_revenue": total_revenue,
         "cash_revenue": cash_revenue,
         "payment_breakdown": recettes_par_provider,
@@ -2673,12 +2678,12 @@ def close_cash_session(
 # ============================================================
 # V5.9 - RECTIFICATION ADMINISTRATIVE D'UNE CAISSE
 # ============================================================
-# Seul un administrateur peut rectifier une caisse clÃ´turÃ©e.
-# L'ancien montant et le nouveau montant sont historisÃ©s.
-# Les ventes et le statut CLOSED ne sont jamais modifiÃ©s.
+# Seul un administrateur peut rectifier une caisse clÃƒÆ’Ã‚Â´turÃƒÆ’Ã‚Â©e.
+# L'ancien montant et le nouveau montant sont historisÃƒÆ’Ã‚Â©s.
+# Les ventes et le statut CLOSED ne sont jamais modifiÃƒÆ’Ã‚Â©s.
 
 class CashSessionRectifyIn(BaseModel):
-    # Montant rÃ©ellement comptÃ© lors de la vÃ©rification.
+    # Montant rÃƒÆ’Ã‚Â©ellement comptÃƒÆ’Ã‚Â© lors de la vÃƒÆ’Ã‚Â©rification.
     declared_amount: int = Field(ge=0)
 
     # Justification obligatoire de la rectification.
@@ -2710,10 +2715,10 @@ def rectify_cash_session(
     if session.status != "CLOSED":
         raise HTTPException(
             status_code=409,
-            detail="Seule une caisse clÃ´turÃ©e peut Ãªtre rectifiÃ©e"
+            detail="Seule une caisse clÃƒÆ’Ã‚Â´turÃƒÆ’Ã‚Â©e peut ÃƒÆ’Ã‚Âªtre rectifiÃƒÆ’Ã‚Â©e"
         )
 
-    # VÃ©rifier que les montants de clÃ´ture existent.
+    # VÃƒÆ’Ã‚Â©rifier que les montants de clÃƒÆ’Ã‚Â´ture existent.
     if (
         session.expected_amount is None
         or session.declared_amount is None
@@ -2721,23 +2726,23 @@ def rectify_cash_session(
     ):
         raise HTTPException(
             status_code=409,
-            detail="Montants de clÃ´ture incomplets"
+            detail="Montants de clÃƒÆ’Ã‚Â´ture incomplets"
         )
 
-    # Nettoyer et contrÃ´ler le motif.
+    # Nettoyer et contrÃƒÆ’Ã‚Â´ler le motif.
     reason = data.reason.strip()
 
     if len(reason) < 10:
         raise HTTPException(
             status_code=422,
-            detail="Le motif doit contenir au moins 10 caractÃ¨res"
+            detail="Le motif doit contenir au moins 10 caractÃƒÆ’Ã‚Â¨res"
         )
 
     # Conserver les anciennes valeurs.
     old_declared = session.declared_amount
     old_difference = session.difference_amount
 
-    # Calculer le nouvel Ã©cart sans modifier les recettes.
+    # Calculer le nouvel ÃƒÆ’Ã‚Â©cart sans modifier les recettes.
     new_difference = (
         data.declared_amount - session.expected_amount
     )
@@ -2746,10 +2751,10 @@ def rectify_cash_session(
     if old_declared == data.declared_amount:
         raise HTTPException(
             status_code=409,
-            detail="Le montant dÃ©clarÃ© est dÃ©jÃ  identique"
+            detail="Le montant dÃƒÆ’Ã‚Â©clarÃƒÆ’Ã‚Â© est dÃƒÆ’Ã‚Â©jÃƒÆ’Ã‚Â  identique"
         )
 
-    # PrÃ©parer l'historique de la rectification.
+    # PrÃƒÆ’Ã‚Â©parer l'historique de la rectification.
     rectification = CashSessionRectification(
         cash_session_id=session.id,
         admin_user_id=user.id,
@@ -2761,12 +2766,12 @@ def rectify_cash_session(
     )
 
     try:
-        # Corriger uniquement le montant dÃ©clarÃ© et l'Ã©cart.
+        # Corriger uniquement le montant dÃƒÆ’Ã‚Â©clarÃƒÆ’Ã‚Â© et l'ÃƒÆ’Ã‚Â©cart.
         session.declared_amount = data.declared_amount
         session.difference_amount = new_difference
 
         # Enregistrer la correction et sa trace d'audit.
-        # Un seul commit garantit la cohÃ©rence des Ã©critures.
+        # Un seul commit garantit la cohÃƒÆ’Ã‚Â©rence des ÃƒÆ’Ã‚Â©critures.
         db.add(rectification)
         db.add(
             Audit(
@@ -2785,7 +2790,7 @@ def rectify_cash_session(
         raise
 
     return {
-        "message": "Rectification enregistrÃ©e",
+        "message": "Rectification enregistrÃƒÆ’Ã‚Â©e",
         "rectification_id": rectification.id,
         "cash_session_id": session.id,
         "status": session.status,
@@ -2804,7 +2809,7 @@ def rectify_cash_session(
 # V5.9 - CONSULTATION DES RECTIFICATIONS DE CAISSE
 # ============================================================
 # Seul un administrateur peut consulter l'historique.
-# Cette opÃ©ration est en lecture seule.
+# Cette opÃƒÆ’Ã‚Â©ration est en lecture seule.
 
 @app.get("/cash/sessions/{session_id}/rectifications")
 def list_cash_rectifications(
@@ -2812,7 +2817,7 @@ def list_cash_rectifications(
     db: Session = Depends(get_db),
     user=Depends(roles("ADMIN"))
 ):
-    # VÃ©rifier que la caisse demandÃ©e existe.
+    # VÃƒÆ’Ã‚Â©rifier que la caisse demandÃƒÆ’Ã‚Â©e existe.
     session = db.get(CashSession, session_id)
 
     if session is None:
@@ -2821,7 +2826,7 @@ def list_cash_rectifications(
             detail="Caisse introuvable"
         )
 
-    # RÃ©cupÃ©rer les rectifications dans l'ordre chronologique.
+    # RÃƒÆ’Ã‚Â©cupÃƒÆ’Ã‚Â©rer les rectifications dans l'ordre chronologique.
     rectifications = (
         db.query(CashSessionRectification)
         .filter(
@@ -2858,30 +2863,30 @@ def list_cash_rectifications(
 # ============================================================
 # V5.9 - TABLEAU DE BORD ADMINISTRATEUR DES CAISSES
 # ============================================================
-# Cet endpoint est rÃ©servÃ© aux administrateurs.
-# Les recettes des paiements et des ventes Ã  bord sont
-# calculÃ©es sÃ©parÃ©ment pour Ã©viter les doubles comptages.
-# Les montants sont exprimÃ©s en XAF.
+# Cet endpoint est rÃƒÆ’Ã‚Â©servÃƒÆ’Ã‚Â© aux administrateurs.
+# Les recettes des paiements et des ventes ÃƒÆ’Ã‚Â  bord sont
+# calculÃƒÆ’Ã‚Â©es sÃƒÆ’Ã‚Â©parÃƒÆ’Ã‚Â©ment pour ÃƒÆ’Ã‚Â©viter les doubles comptages.
+# Les montants sont exprimÃƒÆ’Ã‚Â©s en XAF.
 
 def calculate_agency_revenue(db: Session, cash_session_id=None):
     """
     Calculer les recettes des ventes au guichet.
 
-    Les billets vendus Ã  bord sont exclus, car leurs recettes
-    sont dÃ©jÃ  comptabilisÃ©es dans v59_onboard_sales.
+    Les billets vendus ÃƒÆ’Ã‚Â  bord sont exclus, car leurs recettes
+    sont dÃƒÆ’Ã‚Â©jÃƒÆ’Ã‚Â  comptabilisÃƒÆ’Ã‚Â©es dans v59_onboard_sales.
     """
 
-    # Identifier les billets provenant d'une vente Ã  bord.
+    # Identifier les billets provenant d'une vente ÃƒÆ’Ã‚Â  bord.
     onboard_passes = db.query(OnboardSale59.pass_id)
 
-    # SÃ©lectionner uniquement les billets vendus au guichet.
+    # SÃƒÆ’Ã‚Â©lectionner uniquement les billets vendus au guichet.
     query = db.query(
         func.coalesce(func.sum(Pass59.total), 0)
     ).filter(
         ~Pass59.id.in_(onboard_passes)
     )
 
-    # Limiter le calcul Ã  une caisse lorsqu'un identifiant est fourni.
+    # Limiter le calcul ÃƒÆ’Ã‚Â  une caisse lorsqu'un identifiant est fourni.
     if cash_session_id is not None:
         query = query.filter(
             Pass59.cash_session_id == cash_session_id
@@ -2903,15 +2908,15 @@ def admin_cash_dashboard(
         .scalar()
     ) or 0
 
-    # Compter les caisses clÃ´turÃ©es.
+    # Compter les caisses clÃƒÆ’Ã‚Â´turÃƒÆ’Ã‚Â©es.
     closed_sessions = (
         db.query(func.count(CashSession.id))
         .filter(CashSession.status == "CLOSED")
         .scalar()
     ) or 0
 
-    # Calculer les paiements classiques rÃ©ussis
-    # associÃ©s Ã  une session de caisse.
+    # Calculer les paiements classiques rÃƒÆ’Ã‚Â©ussis
+    # associÃƒÆ’Ã‚Â©s ÃƒÆ’Ã‚Â  une session de caisse.
     payment_revenue = (
         db.query(func.coalesce(func.sum(Payment.amount), 0))
         .filter(
@@ -2921,20 +2926,20 @@ def admin_cash_dashboard(
         .scalar()
     ) or 0
 
-    # Calculer les recettes des ventes Ã  bord.
+    # Calculer les recettes des ventes ÃƒÆ’Ã‚Â  bord.
     onboard_revenue = (
         db.query(func.coalesce(func.sum(OnboardSale59.total_amount), 0))
         .scalar()
     ) or 0
 
     # Calculer les recettes des ventes au guichet.
-    # Les ventes Ã  bord sont exclues pour Ã©viter le double comptage.
+    # Les ventes ÃƒÆ’Ã‚Â  bord sont exclues pour ÃƒÆ’Ã‚Â©viter le double comptage.
     agency_revenue = calculate_agency_revenue(db)
 
     # Additionner les trois sources de recettes.
     total_revenue = payment_revenue + onboard_revenue + agency_revenue
 
-    # Calculer les Ã©carts des caisses clÃ´turÃ©es.
+    # Calculer les ÃƒÆ’Ã‚Â©carts des caisses clÃƒÆ’Ã‚Â´turÃƒÆ’Ã‚Â©es.
     total_difference = (
         db.query(
             func.coalesce(
@@ -2960,7 +2965,7 @@ def admin_cash_dashboard(
             "closed": closed_sessions,
             "total": open_sessions + closed_sessions
         },
-                # PrÃ©senter sÃ©parÃ©ment chaque source de recettes.
+                # PrÃƒÆ’Ã‚Â©senter sÃƒÆ’Ã‚Â©parÃƒÆ’Ã‚Â©ment chaque source de recettes.
         "revenue": {
             "payments": payment_revenue,
             "onboard_sales": onboard_revenue,
@@ -2968,20 +2973,20 @@ def admin_cash_dashboard(
             "total": total_revenue
         },
 
-        # Retourner la somme des Ã©carts des caisses clÃ´turÃ©es.
+        # Retourner la somme des ÃƒÆ’Ã‚Â©carts des caisses clÃƒÆ’Ã‚Â´turÃƒÆ’Ã‚Â©es.
         "cash_difference": total_difference,
 
-        # Retourner le nombre rÃ©el de rectifications administratives.
+        # Retourner le nombre rÃƒÆ’Ã‚Â©el de rectifications administratives.
         "rectifications": rectification_count
 
     }
 
 # ============================================================
-# V5.9 - TABLEAU DÃ‰TAILLÃ‰ DES CAISSES
+# V5.9 - TABLEAU DÃƒÆ’Ã¢â‚¬Â°TAILLÃƒÆ’Ã¢â‚¬Â° DES CAISSES
 # ============================================================
-# Cette route est rÃ©servÃ©e aux administrateurs.
-# Elle prÃ©sente les recettes et les montants de chaque caisse.
-# Les fonds initiaux ne sont pas comptÃ©s comme des recettes.
+# Cette route est rÃƒÆ’Ã‚Â©servÃƒÆ’Ã‚Â©e aux administrateurs.
+# Elle prÃƒÆ’Ã‚Â©sente les recettes et les montants de chaque caisse.
+# Les fonds initiaux ne sont pas comptÃƒÆ’Ã‚Â©s comme des recettes.
 
 
 @app.get("/admin/dashboard/cash/sessions")
@@ -2989,7 +2994,7 @@ def admin_cash_sessions_dashboard(
     db: Session = Depends(get_db),
     user=Depends(roles("ADMIN"))
 ):
-    # RÃ©cupÃ©rer toutes les caisses avec leur responsable.
+    # RÃƒÆ’Ã‚Â©cupÃƒÆ’Ã‚Â©rer toutes les caisses avec leur responsable.
     sessions = (
         db.query(CashSession, User.username)
         .join(User, User.id == CashSession.user_id)
@@ -3001,7 +3006,7 @@ def admin_cash_sessions_dashboard(
 
     for session, username in sessions:
 
-        # Calculer les paiements classiques rÃ©ussis.
+        # Calculer les paiements classiques rÃƒÆ’Ã‚Â©ussis.
         payments_amount = (
             db.query(func.coalesce(func.sum(Payment.amount), 0))
             .filter(
@@ -3011,7 +3016,7 @@ def admin_cash_sessions_dashboard(
             .scalar()
         ) or 0
 
-        # Calculer les ventes Ã  bord de cette caisse.
+        # Calculer les ventes ÃƒÆ’Ã‚Â  bord de cette caisse.
         onboard_amount = (
             db.query(
                 func.coalesce(
@@ -3025,8 +3030,8 @@ def admin_cash_sessions_dashboard(
         ) or 0
 
         # Additionner uniquement les recettes.
-        # Calculer les ventes au guichet associÃ©es Ã  cette caisse.
-        # Les ventes Ã  bord sont exclues pour Ã©viter le double comptage.
+        # Calculer les ventes au guichet associÃƒÆ’Ã‚Â©es ÃƒÆ’Ã‚Â  cette caisse.
+        # Les ventes ÃƒÆ’Ã‚Â  bord sont exclues pour ÃƒÆ’Ã‚Â©viter le double comptage.
         agency_amount = calculate_agency_revenue(
             db,
             cash_session_id=session.id
@@ -3035,21 +3040,21 @@ def admin_cash_sessions_dashboard(
         # Additionner les trois sources de recettes.
         total_revenue = payments_amount + onboard_amount + agency_amount
 
-        # Calculer le montant thÃ©orique de la caisse.
-        # SÃ©parer les recettes en espÃ¨ces du chiffre d'affaires total.
-        # Les paiements Ã©lectroniques ne doivent pas augmenter la caisse physique.
+        # Calculer le montant thÃƒÆ’Ã‚Â©orique de la caisse.
+        # SÃƒÆ’Ã‚Â©parer les recettes en espÃƒÆ’Ã‚Â¨ces du chiffre d'affaires total.
+        # Les paiements ÃƒÆ’Ã‚Â©lectroniques ne doivent pas augmenter la caisse physique.
         recettes_par_provider = calculer_recettes_par_provider(
             db,
             cash_session_id=session.id
         )
         cash_revenue = recettes_par_provider.get("CASH", 0)
 
-        # Fonds initial + encaissements en espÃ¨ces uniquement.
+        # Fonds initial + encaissements en espÃƒÆ’Ã‚Â¨ces uniquement.
         theoretical_amount = (
             session.opening_amount + cash_revenue
         )
 
-        # PrÃ©parer les donnÃ©es de la caisse.
+        # PrÃƒÆ’Ã‚Â©parer les donnÃƒÆ’Ã‚Â©es de la caisse.
         results.append({
             "cash_session_id": session.id,
             "username": username,
@@ -3086,11 +3091,11 @@ def export_cash_sessions_excel(
     db: Session = Depends(get_db),
     user = Depends(roles("ADMIN"))
 ):
-    # RÃ©cupÃ©rer les sessions Ã  partir du tableau de bord existant.
+    # RÃƒÆ’Ã‚Â©cupÃƒÆ’Ã‚Â©rer les sessions ÃƒÆ’Ã‚Â  partir du tableau de bord existant.
     data = admin_cash_sessions_dashboard(db=db, user=user)
     sessions = data["sessions"]
 
-    # Appliquer les filtres sÃ©lectionnÃ©s dans l'interface.
+    # Appliquer les filtres sÃƒÆ’Ã‚Â©lectionnÃƒÆ’Ã‚Â©s dans l'interface.
     if agent:
         sessions = [s for s in sessions if s["username"] == agent]
 
@@ -3104,7 +3109,7 @@ def export_cash_sessions_excel(
             and s["opened_at"].date().isoformat() == day
         ]
 
-    # CrÃ©er le classeur et sa feuille principale.
+    # CrÃƒÆ’Ã‚Â©er le classeur et sa feuille principale.
     workbook = Workbook()
     sheet = workbook.active
     sheet.title = "Historique des caisses"
@@ -3120,27 +3125,27 @@ def export_cash_sessions_excel(
     sheet["A1"].alignment = Alignment(horizontal="center")
     sheet.row_dimensions[1].height = 32
 
-    # Ajouter la date de gÃ©nÃ©ration et le nombre de sessions.
-    sheet["A2"] = "Date de gÃ©nÃ©ration"
+    # Ajouter la date de gÃƒÆ’Ã‚Â©nÃƒÆ’Ã‚Â©ration et le nombre de sessions.
+    sheet["A2"] = "Date de gÃƒÆ’Ã‚Â©nÃƒÆ’Ã‚Â©ration"
     sheet["B2"] = datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M UTC")
-    sheet["D2"] = "Sessions exportÃ©es"
+    sheet["D2"] = "Sessions exportÃƒÆ’Ã‚Â©es"
     sheet["E2"] = len(sessions)
 
-    # DÃ©finir les colonnes du rapport.
+    # DÃƒÆ’Ã‚Â©finir les colonnes du rapport.
     headers = [
         "Caisse",
         "Responsable",
         "Ouverture",
-        "ClÃ´ture",
+        "ClÃƒÆ’Ã‚Â´ture",
         "Statut",
         "Fonds initial (XAF)",
         "Guichet (XAF)",
-        "Ã€ bord (XAF)",
+        "ÃƒÆ’Ã¢â€šÂ¬ bord (XAF)",
         "Autres paiements (XAF)",
         "Recettes (XAF)",
         "Attendu (XAF)",
-        "DÃ©clarÃ© (XAF)",
-        "Ã‰cart (XAF)"
+        "DÃƒÆ’Ã‚Â©clarÃƒÆ’Ã‚Â© (XAF)",
+        "ÃƒÆ’Ã¢â‚¬Â°cart (XAF)"
     ]
 
     header_row = 4
@@ -3151,7 +3156,7 @@ def export_cash_sessions_excel(
         cell.fill = PatternFill(fill_type="solid", fgColor="237A57")
         cell.alignment = Alignment(horizontal="center")
 
-    # Ajouter les donnÃ©es de chaque session.
+    # Ajouter les donnÃƒÆ’Ã‚Â©es de chaque session.
     for row_number, session in enumerate(sessions, start=5):
         values = [
             session["cash_session_id"],
@@ -3176,11 +3181,11 @@ def export_cash_sessions_excel(
                 value=value
             )
 
-            # Appliquer le format numÃ©rique aux montants.
+            # Appliquer le format numÃƒÆ’Ã‚Â©rique aux montants.
             if column >= 6:
                 cell.number_format = '#,##0 "XAF";-#,##0 "XAF";0 "XAF"'
 
-            # Mettre en Ã©vidence les Ã©carts non nuls.
+            # Mettre en ÃƒÆ’Ã‚Â©vidence les ÃƒÆ’Ã‚Â©carts non nuls.
             if column == 13 and value not in (None, 0):
                 cell.font = Font(bold=True, color="C00000")
 
@@ -3197,7 +3202,7 @@ def export_cash_sessions_excel(
         )
         cell.number_format = '#,##0 "XAF";-#,##0 "XAF";0 "XAF"'
 
-    # Mettre en Ã©vidence les totaux.
+    # Mettre en ÃƒÆ’Ã‚Â©vidence les totaux.
     for cell in sheet[total_row]:
         cell.font = Font(bold=True, color="FFFFFF")
         cell.fill = PatternFill(
@@ -3211,16 +3216,16 @@ def export_cash_sessions_excel(
     for column, width in enumerate(widths, start=1):
         sheet.column_dimensions[get_column_letter(column)].width = width
 
-    # Ajouter des filtres automatiques et figer les en-tÃªtes.
+    # Ajouter des filtres automatiques et figer les en-tÃƒÆ’Ã‚Âªtes.
     sheet.auto_filter.ref = f"A4:M{max(4, total_row - 1)}"
     sheet.freeze_panes = "C5"
 
-    # Enregistrer le classeur en mÃ©moire.
+    # Enregistrer le classeur en mÃƒÆ’Ã‚Â©moire.
     output = BytesIO()
     workbook.save(output)
     output.seek(0)
 
-    # Retourner le fichier Excel Ã  tÃ©lÃ©charger.
+    # Retourner le fichier Excel ÃƒÆ’Ã‚Â  tÃƒÆ’Ã‚Â©lÃƒÆ’Ã‚Â©charger.
     filename = "boukoulou_historique_caisses.xlsx"
 
     return StreamingResponse(
@@ -3236,7 +3241,7 @@ def export_cash_sessions_excel(
 
 
 # ============================================================
-# V5.9 - RAPPORT PDF INDIVIDUEL DE CLÃ”TURE DE CAISSE
+# V5.9 - RAPPORT PDF INDIVIDUEL DE CLÃƒÆ’Ã¢â‚¬ÂTURE DE CAISSE
 # ============================================================
 
 @app.get("/admin/cash/sessions/{session_id}/report.pdf")
@@ -3245,16 +3250,16 @@ def export_cash_session_pdf(
     db: Session = Depends(get_db),
     user=Depends(roles("ADMIN"))
 ):
-    # VÃ©rifier que la caisse existe et qu'elle est clÃ´turÃ©e.
+    # VÃƒÆ’Ã‚Â©rifier que la caisse existe et qu'elle est clÃƒÆ’Ã‚Â´turÃƒÆ’Ã‚Â©e.
     session = db.get(CashSession, session_id)
 
     if session is None:
         raise HTTPException(404, "Caisse introuvable")
 
     if session.status != "CLOSED":
-        raise HTTPException(409, "La caisse doit Ãªtre clÃ´turÃ©e")
+        raise HTTPException(409, "La caisse doit ÃƒÆ’Ã‚Âªtre clÃƒÆ’Ã‚Â´turÃƒÆ’Ã‚Â©e")
 
-    # RÃ©utiliser les donnÃ©es du tableau de bord financier.
+    # RÃƒÆ’Ã‚Â©utiliser les donnÃƒÆ’Ã‚Â©es du tableau de bord financier.
     dashboard = admin_cash_sessions_dashboard(db=db, user=user)
 
     session_data = next(
@@ -3266,16 +3271,16 @@ def export_cash_session_pdf(
     )
 
     if session_data is None:
-        raise HTTPException(404, "DonnÃ©es de caisse introuvables")
+        raise HTTPException(404, "DonnÃƒÆ’Ã‚Â©es de caisse introuvables")
 
-    # RÃ©cupÃ©rer l'historique des rectifications.
+    # RÃƒÆ’Ã‚Â©cupÃƒÆ’Ã‚Â©rer l'historique des rectifications.
     history = list_cash_rectifications(
         session_id=session_id,
         db=db,
         user=user,
     )
 
-    # Construire le rapport PDF en mÃ©moire.
+    # Construire le rapport PDF en mÃƒÆ’Ã‚Â©moire.
     pdf = generer_rapport_caisse(
         session_data,
         history["rectifications"],
@@ -3384,3 +3389,10 @@ def link_driver_user(
         "username": account.username,
         "message": "COMPTE_CHAUFFEUR_ASSOCIE"
     }
+
+app.include_router(gps_phone_router)
+
+app.include_router(gps_device_router)
+
+app.include_router(gps_fleet_router)
+app.include_router(gps_live_router)

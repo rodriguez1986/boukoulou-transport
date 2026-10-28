@@ -1,6 +1,6 @@
 let tok=localStorage.bt_token||"";
 let currentUser=null;
-const ROLE_PAGES={ADMIN:["dash","network","fleet","trips","stock","cash","history","scan","users"],AGENT:["sale","cash"],CONTROLLER:["scan"],DRIVER:["driverView"]};
+const ROLE_PAGES={ADMIN:["dash","network","fleet","gpsMap","trips","stock","cash","history","scan","users"],AGENT:["sale","cash"],CONTROLLER:["scan"],DRIVER:["driverView"]};
 const $=s=>document.querySelector(s);
 
 async function api(p,o={}){
@@ -23,11 +23,13 @@ function logout(){localStorage.clear();location.reload()}
 function page(id){
   const allowed=ROLE_PAGES[currentUser?.role]||[];
   if(!allowed.includes(id))return;
-  ["dash","network","fleet","trips","sale","stock","cash","history","scan","users","driverView"].forEach(x=>$("#"+x).classList.toggle("hide",x!==id));
+  ["dash","network","fleet","trips","sale","stock","cash","history","scan","users","driverView","gpsMap"].forEach(x=>$("#"+x).classList.toggle("hide",x!==id));
   if(id==="dash")dashboard();
   if(id==="history")loadHistory();
   if(id==="users"){loadUsers();loadUserAudit();}
   if(id==="fleet")loadFleet();
+  if(id==="gpsMap")gpsStart();
+  else gpsStop();
   if(id==="trips")loadOperations();
   if(id==="sale")v59LoadSale();
    if(id==="stock")v59LoadStock();
