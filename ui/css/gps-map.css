@@ -127,3 +127,57 @@
     height: 320px;
   }
 }
+
+/* Lecture animee de l'historique GPS */
+
+.gps-playback-panel {
+  margin: 16px 0;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+}
+
+.gps-playback-panel h3 {
+  margin-top: 0;
+}
+
+.gps-playback-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.gps-playback-buttons button {
+  padding: 9px 14px;
+  cursor: pointer;
+}
+
+.gps-playback-buttons button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#gpsPlaybackSpeed {
+  padding: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+}
+
+#gpsPlaybackSlider {
+  width: 100%;
+  cursor: pointer;
+}
+
+#gpsPlaybackSlider:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+#gpsPlaybackInfo {
+  margin: 10px 0 0;
+  color: #334155;
+  font-weight: 500;
+}

@@ -334,7 +334,46 @@
   <p id="gpsHistoryStatus">Sélectionnez un véhicule et une période.</p>
   <p id="gpsHistoryDetails"></p>
 
-  <div id="gpsHistoryMap"></div>
+<div class="gps-playback-panel">
+  <h3>Lecture du trajet GPS</h3>
+
+  <div class="gps-playback-buttons">
+    <button type="button" id="gpsPlaybackPlay"
+            onclick="gpsPlaybackToggle()" disabled>
+      ▶ Lecture
+    </button>
+
+    <button type="button" id="gpsPlaybackRestart"
+            onclick="gpsPlaybackRestart()" disabled>
+      Recommencer
+    </button>
+
+    <label for="gpsPlaybackSpeed">Vitesse</label>
+    <select id="gpsPlaybackSpeed">
+      <option value="1">×1</option>
+      <option value="2">×2</option>
+      <option value="5">×5</option>
+      <option value="10">×10</option>
+    </select>
+  </div>
+
+  <input
+    type="range"
+    id="gpsPlaybackSlider"
+    min="0"
+    max="0"
+    value="0"
+    step="1"
+    oninput="gpsPlaybackSeek(this.value)"
+    disabled
+  >
+
+  <p id="gpsPlaybackInfo">
+    Chargez un trajet pour activer la lecture.
+  </p>
+</div>
+
+<div id="gpsHistoryMap"></div>
 </div>
   </div>
 </section>

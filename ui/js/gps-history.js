@@ -43,6 +43,7 @@ function gpsHistoryInit() {
 
 function gpsHistoryClear() {
   gpsHistoryRequestId++;
+  gpsPlaybackReset();
 
   if (gpsHistoryMap && gpsHistoryLayer) {
     gpsHistoryMap.removeLayer(gpsHistoryLayer);
@@ -114,6 +115,7 @@ async function gpsHistoryShow() {
   }
 
   const requestId = ++gpsHistoryRequestId;
+  gpsPlaybackReset();
 
   gpsHistoryStatus("Chargement de l'historique...");
 
@@ -221,6 +223,7 @@ async function gpsHistoryShow() {
     if (positions.length > 1) {
       addPoint(last, "Arrivee", "#dc2626");
     }
+    gpsPlaybackLoad(positions);
 
     gpsHistoryMap.invalidateSize();
 
@@ -254,4 +257,192 @@ async function gpsHistoryShow() {
       gpsHistoryStatus("Erreur historique : " + error.message);
     }
   }
+}
+
+/* ==========================================
+   LECTURE ANIMEE DES TRAJETS GPS
+   Boukoulou Transport V5.9
+   ========================================== */
+
+let gpsPlaybackPositions = [];
+let gpsPlaybackIndex = 0;
+let gpsPlaybackTimer = null;
+let gpsPlaybackMarker = null;
+let gpsPlaybackRunning = false;
+
+function gpsPlaybackStop() {
+  if (gpsPlaybackTimer !== null) {
+    clearInterval(gpsPlaybackTimer);
+    gpsPlaybackTimer = null;
+  }
+
+  gpsPlaybackRunning = false;
+
+  const button = document.getElementById("gpsPlaybackPlay");
+
+  if (button) {
+    button.textContent = "▶ Lecture";
+  }
+}
+
+function gpsPlaybackReset() {
+  gpsPlaybackStop();
+
+  gpsPlaybackPositions = [];
+  gpsPlaybackIndex = 0;
+
+  if (gpsHistoryMap && gpsPlaybackMarker) {
+    gpsHistoryMap.removeLayer(gpsPlaybackMarker);
+  }
+
+  gpsPlaybackMarker = null;
+
+  const slider = document.getElementById("gpsPlaybackSlider");
+  const play = document.getElementById("gpsPlaybackPlay");
+  const restart = document.getElementById("gpsPlaybackRestart");
+  const info = document.getElementById("gpsPlaybackInfo");
+
+  if (slider) {
+    slider.min = "0";
+    slider.max = "0";
+    slider.value = "0";
+    slider.disabled = true;
+  }
+
+  if (play) play.disabled = true;
+  if (restart) restart.disabled = true;
+
+  if (info) {
+    info.textContent = "Chargez un trajet pour activer la lecture.";
+  }
+}
+
+function gpsPlaybackLoad(positions) {
+  gpsPlaybackReset();
+
+  if (!Array.isArray(positions) || positions.length === 0) {
+    return;
+  }
+
+  gpsPlaybackPositions = positions;
+  gpsPlaybackIndex = 0;
+
+  const slider = document.getElementById("gpsPlaybackSlider");
+  const play = document.getElementById("gpsPlaybackPlay");
+  const restart = document.getElementById("gpsPlaybackRestart");
+
+  if (slider) {
+    slider.min = "0";
+    slider.max = String(positions.length - 1);
+    slider.value = "0";
+    slider.disabled = positions.length < 2;
+  }
+
+  if (play) play.disabled = positions.length < 2;
+  if (restart) restart.disabled = false;
+
+  gpsPlaybackRender(0);
+}
+
+function gpsPlaybackRender(index) {
+  if (!gpsHistoryMap || !gpsPlaybackPositions.length) return;
+
+  const safeIndex = Math.max(
+    0,
+    Math.min(
+      Number(index) || 0,
+      gpsPlaybackPositions.length - 1
+    )
+  );
+
+  gpsPlaybackIndex = safeIndex;
+
+  const point = gpsPlaybackPositions[safeIndex];
+
+  const position = [
+    Number(point.latitude),
+    Number(point.longitude)
+  ];
+
+  if (!gpsPlaybackMarker) {
+    gpsPlaybackMarker = L.circleMarker(position, {
+      radius: 10,
+      color: "#ffffff",
+      weight: 3,
+      fillColor: "#f59e0b",
+      fillOpacity: 1
+    }).addTo(gpsHistoryMap);
+  } else {
+    gpsPlaybackMarker.setLatLng(position);
+  }
+
+  const slider = document.getElementById("gpsPlaybackSlider");
+
+  if (slider) {
+    slider.value = String(safeIndex);
+  }
+
+  const info = document.getElementById("gpsPlaybackInfo");
+
+  if (info) {
+    info.textContent =
+      "Position " + (safeIndex + 1) +
+      " / " + gpsPlaybackPositions.length +
+      " | Heure : " + gpsHistoryDate(point.recorded_at) +
+      " | Vitesse : " + (point.speed ?? "-") + " km/h" +
+      " | Source : " + (point.source || "-");
+  }
+}
+
+function gpsPlaybackSeek(value) {
+  gpsPlaybackStop();
+  gpsPlaybackRender(value);
+}
+
+function gpsPlaybackRestart() {
+  gpsPlaybackStop();
+  gpsPlaybackRender(0);
+}
+
+function gpsPlaybackToggle() {
+  if (gpsPlaybackRunning) {
+    gpsPlaybackStop();
+    return;
+  }
+
+  if (gpsPlaybackPositions.length < 2) return;
+
+  if (gpsPlaybackIndex >= gpsPlaybackPositions.length - 1) {
+    gpsPlaybackRender(0);
+  }
+
+  const speedElement = document.getElementById("gpsPlaybackSpeed");
+
+  const speed = Number(speedElement?.value || 1);
+
+  const delay = Math.max(
+    50,
+    Math.round(1000 / (Number.isFinite(speed) && speed > 0 ? speed : 1))
+  );
+
+  gpsPlaybackRunning = true;
+
+  const button = document.getElementById("gpsPlaybackPlay");
+
+  if (button) {
+    button.textContent = "⏸ Pause";
+  }
+
+  gpsPlaybackTimer = setInterval(() => {
+    if (gpsPlaybackIndex >= gpsPlaybackPositions.length - 1) {
+      gpsPlaybackStop();
+      return;
+    }
+
+    gpsPlaybackRender(gpsPlaybackIndex + 1);
+
+    if (gpsPlaybackIndex >= gpsPlaybackPositions.length - 1) {
+      gpsPlaybackStop();
+    }
+  }, delay);
 }
