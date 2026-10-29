@@ -23,7 +23,7 @@ function gpsVisible() {
 
   return !!section &&
     !section.classList.contains("hide") &&
-    currentUser?.role === "ADMIN";
+    ["ADMIN", "COUNTRY_MANAGER", "AGENT"].includes(currentUser?.role);
 }
 
 function gpsStart() {
@@ -59,13 +59,25 @@ function gpsStart() {
   }, 100);
 
   gpsRefresh();
-  if (typeof gpsHistoryInit === "function") {
-  gpsHistoryInit();
-}
 
-if (typeof gpsHistoryLoadVehicles === "function") {
-  gpsHistoryLoadVehicles();
-}
+  const canViewHistory =
+    ["ADMIN", "COUNTRY_MANAGER"].includes(currentUser?.role);
+
+  const historyPanel = document.getElementById("gpsHistoryPanel");
+
+  if (historyPanel) {
+    historyPanel.classList.toggle("hide", !canViewHistory);
+  }
+
+  if (canViewHistory) {
+    if (typeof gpsHistoryInit === "function") {
+      gpsHistoryInit();
+    }
+
+    if (typeof gpsHistoryLoadVehicles === "function") {
+      gpsHistoryLoadVehicles();
+    }
+  }
 
 
 

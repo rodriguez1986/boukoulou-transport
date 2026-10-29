@@ -1,6 +1,6 @@
 let tok=localStorage.bt_token||"";
 let currentUser=null;
-const ROLE_PAGES={ADMIN:["dash","network","fleet","gpsMap","trips","stock","cash","history","scan","users"],AGENT:["sale","cash"],CONTROLLER:["scan"],DRIVER:["driverView"]};
+const ROLE_PAGES={ADMIN:["dash","network","fleet","gpsMap","trips","stock","cash","history","scan","users"],COUNTRY_MANAGER:["gpsMap"],AGENT:["sale","cash","gpsMap"],CONTROLLER:["scan"],DRIVER:["driverView"]};
 const $=s=>document.querySelector(s);
 
 async function api(p,o={}){
