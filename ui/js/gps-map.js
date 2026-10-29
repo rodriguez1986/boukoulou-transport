@@ -1,4 +1,4 @@
-﻿let gpsMap = null;
+let gpsMap = null;
 let gpsMarkers = new Map();
 let gpsInterval = null;
 let gpsRequestActive = false;
@@ -59,6 +59,15 @@ function gpsStart() {
   }, 100);
 
   gpsRefresh();
+  if (typeof gpsHistoryInit === "function") {
+  gpsHistoryInit();
+}
+
+if (typeof gpsHistoryLoadVehicles === "function") {
+  gpsHistoryLoadVehicles();
+}
+
+
 
   gpsInterval = setInterval(gpsRefresh, 5000);
 }

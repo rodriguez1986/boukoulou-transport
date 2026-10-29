@@ -35,3 +35,95 @@
   display: block;
   margin-bottom: 5px;
 }
+
+
+/* ==========================================
+   HISTORIQUE GPS - BOUKOULOU TRANSPORT V5.9
+   ========================================== */
+
+.gps-history-panel {
+  margin-top: 28px;
+  padding: 20px;
+  border: 1px solid #dce3ea;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.gps-history-panel h2 {
+  margin-top: 0;
+  margin-bottom: 18px;
+  color: #172b4d;
+}
+
+.gps-history-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.gps-history-filters > div {
+  min-width: 0;
+}
+
+.gps-history-filters label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.gps-history-filters select,
+.gps-history-filters input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #172b4d;
+}
+
+.gps-history-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.gps-history-actions button {
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+#gpsHistoryStatus {
+  margin: 12px 0;
+  font-weight: 600;
+}
+
+#gpsHistoryDetails {
+  margin-bottom: 12px;
+  color: #475569;
+}
+
+#gpsHistoryMap {
+  width: 100%;
+  height: 420px;
+  min-height: 300px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  z-index: 0;
+}
+
+@media (max-width: 700px) {
+  .gps-history-panel {
+    padding: 12px;
+  }
+
+  .gps-history-filters {
+    grid-template-columns: 1fr;
+  }
+
+  #gpsHistoryMap {
+    height: 320px;
+  }
+}

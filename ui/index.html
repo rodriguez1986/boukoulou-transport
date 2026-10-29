@@ -292,6 +292,50 @@
 
     <h3>Liste des vehicules</h3>
     <div id="gpsVehicles"></div>
+    <div class="gps-history-panel">
+  <h2>Historique des trajets GPS</h2>
+
+  <div class="gps-history-filters">
+    <div>
+      <label for="gpsHistoryVehicle">Véhicule</label>
+      <select id="gpsHistoryVehicle"></select>
+    </div>
+
+    <div>
+      <label for="gpsHistorySource">Source GPS</label>
+      <select id="gpsHistorySource">
+        <option value="ALL">Toutes</option>
+        <option value="PHONE">Téléphone</option>
+        <option value="DEVICE">Boîtier GPS</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="gpsHistoryStart">Date et heure de début</label>
+      <input type="datetime-local" id="gpsHistoryStart">
+    </div>
+
+    <div>
+      <label for="gpsHistoryEnd">Date et heure de fin</label>
+      <input type="datetime-local" id="gpsHistoryEnd">
+    </div>
+  </div>
+
+  <div class="gps-history-actions">
+    <button type="button" onclick="gpsHistoryShow()">
+      Afficher le trajet
+    </button>
+
+    <button type="button" onclick="gpsHistoryClear()">
+      Effacer le trajet
+    </button>
+  </div>
+
+  <p id="gpsHistoryStatus">Sélectionnez un véhicule et une période.</p>
+  <p id="gpsHistoryDetails"></p>
+
+  <div id="gpsHistoryMap"></div>
+</div>
   </div>
 </section>
 <section id="driverView" class="hide"><h1>Courses programmées</h1><p class="muted">Consultation uniquement. Les affectations individuelles seront ajoutées dans une prochaine version.</p><div class="card"><div id="driverTrips"></div></div></section>
@@ -306,6 +350,7 @@
 <link rel="stylesheet" href="/static/css/gps-map.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="/static/js/gps-map.js"></script>
+<script src="/static/js/gps-history.js"></script>
 <script src="/static/js/app.js"></script>
 <script src="/static/js/v59.js"></script>
 </body>
