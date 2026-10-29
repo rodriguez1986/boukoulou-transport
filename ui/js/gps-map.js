@@ -23,11 +23,53 @@ function gpsVisible() {
 
   return !!section &&
     !section.classList.contains("hide") &&
-    ["ADMIN", "COUNTRY_MANAGER", "AGENT"].includes(currentUser?.role);
+    ["ADMIN", "COUNTRY_MANAGER", "AGENT", "CONTROLLER"].includes(currentUser?.role);
 }
 
+function gpsConfigureCountry() {
+  const select = document.getElementById("gpsCountry");
+  if (!select || !currentUser) return;
+
+  const role = currentUser.role;
+
+  // L'administrateur peut consulter tous les pays.
+  if (role === "ADMIN") {
+    for (const option of select.options) {
+      option.hidden = false;
+      option.disabled = false;
+    }
+    return;
+  }
+
+  // Les autres utilisateurs sont limites a leur pays.
+  const countryId = currentUser.country_id == null
+    ? ""
+    : String(currentUser.country_id);
+
+  let found = false;
+
+  for (const option of select.options) {
+    const allowed =
+      countryId !== "" && option.value === countryId;
+
+    option.hidden = !allowed;
+    option.disabled = !allowed;
+
+    if (allowed) {
+      found = true;
+    }
+  }
+
+  if (found) {
+    select.value = countryId;
+  } else {
+    select.selectedIndex = -1;
+  }
+}
 function gpsStart() {
   gpsStop();
+
+  gpsConfigureCountry();
 
   if (!gpsVisible()) return;
 

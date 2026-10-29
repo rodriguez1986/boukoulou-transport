@@ -377,7 +377,21 @@
 </div>
   </div>
 </section>
-<section id="driverView" class="hide"><h1>Courses programmées</h1><p class="muted">Consultation uniquement. Les affectations individuelles seront ajoutées dans une prochaine version.</p><div class="card"><div id="driverTrips"></div></div></section>
+<section id="driverView" class="hide">
+  <h1>Espace chauffeur</h1>
+
+  <div class="card">
+    <h2>Mon véhicule - GPS en temps réel</h2>
+    <p id="driverGpsStatus">Chargement du véhicule affecté...</p>
+    <div id="driverGpsDetails"></div>
+    <div id="driverGpsMap" style="height:380px;width:100%;border-radius:10px;margin-top:12px;"></div>
+  </div>
+
+  <div class="card">
+    <h2>Courses programmées</h2>
+    <div id="driverTrips"></div>
+  </div>
+</section>
     <section id="scan" class="hide"><h1>Contrôle QR V5.9</h1><div class="card">
  <label>Course d'embarquement</label><select id="v59BoardTrip"></select>
  <label>Contenu du QR (CODE|SIGNATURE)</label><input id="payload" placeholder="BT-...|signature">
@@ -390,6 +404,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="/static/js/gps-map.js"></script>
 <script src="/static/js/gps-history.js"></script>
+<script src="/static/js/driver-gps.js"></script>
 <script src="/static/js/app.js"></script>
 <script src="/static/js/v59.js"></script>
 </body>

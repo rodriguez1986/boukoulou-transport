@@ -21,12 +21,12 @@ router = APIRouter(
 @router.get("/fleet")
 def live_fleet(
     mode: GPSMode = Query(default=GPSMode.AUTO),
-    user=Depends(roles("ADMIN", "COUNTRY_MANAGER", "AGENT")),
+    user=Depends(roles("ADMIN", "COUNTRY_MANAGER", "AGENT", "CONTROLLER")),
     db: Session = Depends(get_db),
 ):
     query = select(Vehicle).order_by(Vehicle.id)
 
-    if user.role.value in ("COUNTRY_MANAGER", "AGENT"):
+    if user.role.value in ("COUNTRY_MANAGER", "AGENT", "CONTROLLER"):
         if user.country_id is None:
             raise HTTPException(
                 status_code=403,

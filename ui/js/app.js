@@ -1,6 +1,6 @@
 let tok=localStorage.bt_token||"";
 let currentUser=null;
-const ROLE_PAGES={ADMIN:["dash","network","fleet","gpsMap","trips","stock","cash","history","scan","users"],COUNTRY_MANAGER:["gpsMap"],AGENT:["sale","cash","gpsMap"],CONTROLLER:["scan"],DRIVER:["driverView"]};
+const ROLE_PAGES={ADMIN:["dash","network","fleet","gpsMap","trips","stock","cash","history","scan","users"],COUNTRY_MANAGER:["gpsMap"],AGENT:["sale","cash","gpsMap"],CONTROLLER:["scan","gpsMap"],DRIVER:["driverView"]};
 const $=s=>document.querySelector(s);
 
 async function api(p,o={}){
@@ -35,7 +35,12 @@ function page(id){
    if(id==="stock")v59LoadStock();
    if(id==="scan")v59LoadTrips();
   if(id==="cash"){if(currentUser.role==="ADMIN")loadCash();loadSession();}
-  if(id==="driverView")loadDriverTrips();
+  if(id==="driverView"){
+    loadDriverTrips();
+    driverGpsStart();
+  } else {
+    driverGpsStop();
+  }
 }
 async function loadDriverTrips(){
  try{const t=await api("/trips");$("#driverTrips").innerHTML=table(["Course","Ligne","Départ","Statut"],t.map(x=>`<tr><td>#${x.id}</td><td>${esc(x.line)}</td><td>${fmtDate(x.departure_at)}</td><td>${pill(x.status)}</td></tr>`));}
