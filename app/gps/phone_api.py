@@ -1,4 +1,4 @@
-﻿from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from math import isfinite
 
 from fastapi import APIRouter, Depends, HTTPException

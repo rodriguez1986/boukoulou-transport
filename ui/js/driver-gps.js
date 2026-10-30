@@ -67,6 +67,7 @@ async function driverGpsStart() {
     }
 
     driverGpsVehicle = vehicles[0];
+    driverPhoneGpsReady(driverGpsVehicle);
 
     if (!driverGpsMap) {
       driverGpsMap = L.map("driverGpsMap").setView(

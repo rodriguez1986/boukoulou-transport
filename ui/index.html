@@ -384,6 +384,22 @@
     <h2>Mon véhicule - GPS en temps réel</h2>
     <p id="driverGpsStatus">Chargement du véhicule affecté...</p>
     <div id="driverGpsDetails"></div>
+
+    <div id="driverPhoneGpsControls" style="margin-top:16px;">
+      <h3>Partage GPS de mon téléphone</h3>
+      <p id="driverPhoneGpsStatus" role="status" aria-live="polite">
+        Partage GPS arrêté.
+      </p>
+      <button id="driverPhoneGpsStartBtn" type="button" disabled>
+        Démarrer le partage GPS
+      </button>
+      <button id="driverPhoneGpsStopBtn" type="button" disabled>
+        Arrêter le partage GPS
+      </button>
+      <p id="driverPhoneGpsLastSent">
+        Dernière position envoyée : aucune.
+      </p>
+    </div>
     <div id="driverGpsMap" style="height:380px;width:100%;border-radius:10px;margin-top:12px;"></div>
   </div>
 
@@ -405,6 +421,7 @@
 <script src="/static/js/gps-map.js"></script>
 <script src="/static/js/gps-history.js"></script>
 <script src="/static/js/driver-gps.js"></script>
+<script src="/static/js/driver-phone-gps.js"></script>
 <script src="/static/js/app.js"></script>
 <script src="/static/js/v59.js"></script>
 </body>

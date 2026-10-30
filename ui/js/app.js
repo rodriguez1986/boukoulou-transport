@@ -18,7 +18,7 @@ async function login(){
     tok=d.access_token;localStorage.bt_token=tok;await show();
   }catch(e){$("#err").textContent=e.message}
 }
-function logout(){localStorage.clear();location.reload()}
+function logout(){driverPhoneGpsStop();localStorage.clear();location.reload()}
 
 function page(id){
   const allowed=ROLE_PAGES[currentUser?.role]||[];
@@ -39,6 +39,7 @@ function page(id){
     loadDriverTrips();
     driverGpsStart();
   } else {
+    driverPhoneGpsStop();
     driverGpsStop();
   }
 }
