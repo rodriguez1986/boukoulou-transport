@@ -9,7 +9,8 @@ from sqlalchemy.orm import Session
 from ..db import get_db
 from ..models import Vehicle
 from ..security import roles
-from .config import GPSSource
+from .config import GPSSource, GPSMode
+from .history_auto import select_auto_history
 from .phone_api import GPSHybridPosition, assigned_vehicles
 
 
@@ -25,6 +26,7 @@ def vehicle_history(
     start: Optional[datetime] = Query(default=None),
     end: Optional[datetime] = Query(default=None),
     source: Optional[GPSSource] = Query(default=None),
+    mode: Optional[GPSMode] = Query(default=None),
     limit: int = Query(default=500, ge=1, le=2000),
     user=Depends(roles("ADMIN", "COUNTRY_MANAGER", "DRIVER")),
     db: Session = Depends(get_db),
@@ -94,6 +96,22 @@ def vehicle_history(
             detail="Periode maximale : 31 jours",
         )
 
+    # AUTO ne peut pas etre combine avec un filtre source.
+    if mode == GPSMode.AUTO and source is not None:
+        raise HTTPException(
+            status_code=422,
+            detail="AUTO ne peut pas etre combine avec source",
+        )
+
+    # Les modes explicites PHONE/DEVICE doivent rester coherents.
+    if mode in (GPSMode.PHONE, GPSMode.DEVICE):
+        if source is not None and source.value != mode.value:
+            raise HTTPException(
+                status_code=422,
+                detail="Mode et source incompatibles",
+            )
+        source = GPSSource(mode.value)
+
     # 5. Construire la requete SQL
     filters = [
         GPSHybridPosition.vehicle_id == vehicle_id,
@@ -112,7 +130,92 @@ def vehicle_history(
         .where(*filters)
     ) or 0
 
-    # 7. Recuperer les positions
+    # 7. Mode AUTO : selection sur la periode complete.
+    if mode == GPSMode.AUTO:
+        max_raw_positions = 100000
+
+        if total > max_raw_positions:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "Historique AUTO trop volumineux. "
+                    "Reduire la periode demandee."
+                ),
+            )
+
+        # Recuperer le dernier DEVICE precedant la periode,
+        # uniquement s'il peut encore etre recent au debut.
+        from .config import GPS_STALE_SECONDS
+
+        previous_device = db.scalar(
+            select(GPSHybridPosition)
+            .where(
+                GPSHybridPosition.vehicle_id == vehicle_id,
+                GPSHybridPosition.source == "DEVICE",
+                GPSHybridPosition.recorded_at < start,
+                GPSHybridPosition.recorded_at >= (
+                    start - timedelta(seconds=GPS_STALE_SECONDS)
+                ),
+            )
+            .order_by(
+                GPSHybridPosition.recorded_at.desc(),
+                GPSHybridPosition.id.desc(),
+            )
+            .limit(1)
+        )
+
+        raw_rows = db.scalars(
+            select(GPSHybridPosition)
+            .where(*filters)
+            .order_by(
+                GPSHybridPosition.recorded_at.asc(),
+                GPSHybridPosition.id.asc(),
+            )
+        ).all()
+
+        selection_input = (
+            [previous_device] if previous_device is not None else []
+        ) + raw_rows
+
+        selected_rows = select_auto_history(selection_input)
+
+        # Ne pas exposer la position precedente hors periode.
+        selected_rows = [
+            row for row in selected_rows
+            if start <= (
+                row.recorded_at.replace(tzinfo=timezone.utc)
+                if row.recorded_at.tzinfo is None
+                else row.recorded_at.astimezone(timezone.utc)
+            ) <= end
+        ]
+
+        selected_total = len(selected_rows)
+        rows = selected_rows[-limit:]
+
+        positions = [
+            {
+                "id": row.id,
+                "latitude": row.latitude,
+                "longitude": row.longitude,
+                "speed": row.speed,
+                "source": row.source,
+                "recorded_at": row.recorded_at.isoformat(),
+            }
+            for row in rows
+        ]
+
+        return {
+            "vehicle_id": vehicle_id,
+            "start": start.isoformat(),
+            "end": end.isoformat(),
+            "source": "AUTO",
+            "total": selected_total,
+            "returned": len(positions),
+            "truncated": selected_total > len(positions),
+            "positions": positions,
+        }
+
+    # 8. Recuperer les positions
     # Les plus recentes sont selectionnees en premier.
     stmt = (
         select(GPSHybridPosition)

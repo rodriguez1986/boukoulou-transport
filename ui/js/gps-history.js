@@ -101,6 +101,73 @@ async function gpsHistoryLoadVehicles() {
   }
 }
 
+
+// Protection des trajets historiques.
+// Une rupture n'est pas un deplacement reel du vehicule.
+const GPS_HISTORY_MAX_GAP_SECONDS = 120;
+const GPS_HISTORY_MAX_SPEED_KMH = 160;
+
+function gpsHistoryDistanceKm(a, b) {
+  const toRad = degrees => degrees * Math.PI / 180;
+  const lat1 = toRad(Number(a.latitude));
+  const lat2 = toRad(Number(b.latitude));
+  const dLat = lat2 - lat1;
+  const dLon = toRad(
+    Number(b.longitude) - Number(a.longitude)
+  );
+
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) *
+    Math.sin(dLon / 2) ** 2;
+
+  return 6371 * 2 * Math.atan2(
+    Math.sqrt(Math.max(0, Math.min(1, h))),
+    Math.sqrt(Math.max(0, 1 - h))
+  );
+}
+
+function gpsHistoryHasBreak(previous, current, mode) {
+  if (mode === "ALL" && previous.source !== current.source) {
+    return true;
+  }
+
+  const elapsed = (
+    Date.parse(current.recorded_at) -
+    Date.parse(previous.recorded_at)
+  ) / 1000;
+
+  if (!Number.isFinite(elapsed) || elapsed <= 0) {
+    return true;
+  }
+
+  if (elapsed > GPS_HISTORY_MAX_GAP_SECONDS) {
+    return true;
+  }
+
+  const distance = gpsHistoryDistanceKm(previous, current);
+  const speed = distance / (elapsed / 3600);
+
+  return distance > 0.2 &&
+    speed > GPS_HISTORY_MAX_SPEED_KMH;
+}
+
+function gpsHistoryBuildSegments(positions, mode) {
+  if (!positions.length) return [];
+
+  const segments = [[positions[0]]];
+
+  for (let i = 1; i < positions.length; i++) {
+    if (gpsHistoryHasBreak(positions[i - 1], positions[i], mode)) {
+      segments.push([]);
+    }
+
+    segments[segments.length - 1].push(positions[i]);
+  }
+
+  return segments;
+}
+
 async function gpsHistoryShow() {
   const vehicle = document.getElementById("gpsHistoryVehicle");
   const source = document.getElementById("gpsHistorySource");
@@ -123,7 +190,9 @@ async function gpsHistoryShow() {
     const params = new URLSearchParams();
     params.set("limit", "2000");
 
-    if (source.value !== "ALL") {
+    if (source.value === "AUTO") {
+      params.set("mode", "AUTO");
+    } else if (source.value !== "ALL") {
       params.set("source", source.value);
     }
 
@@ -180,12 +249,26 @@ async function gpsHistoryShow() {
       Number(p.longitude)
     ]);
 
-    if (coordinates.length > 1) {
-      L.polyline(coordinates, {
-        color: "#2563eb",
-        weight: 5,
-        opacity: 0.85
-      }).addTo(gpsHistoryLayer);
+    const segments = gpsHistoryBuildSegments(
+      positions, source.value
+    );
+
+    for (const segment of segments) {
+      if (segment.length < 2) continue;
+
+      L.polyline(
+        segment.map(p => [
+          Number(p.latitude),
+          Number(p.longitude)
+        ]),
+        {
+          color: segment[0].source === "PHONE"
+            ? "#f59e0b"
+            : "#2563eb",
+          weight: 5,
+          opacity: 0.85
+        }
+      ).addTo(gpsHistoryLayer);
     }
 
     const first = positions[0];
@@ -223,15 +306,24 @@ async function gpsHistoryShow() {
     if (positions.length > 1) {
       addPoint(last, "Arrivee", "#dc2626");
     }
-    gpsPlaybackLoad(positions);
+    gpsPlaybackLoad(positions, source.value);
 
     gpsHistoryMap.invalidateSize();
 
-    if (coordinates.length === 1) {
-      gpsHistoryMap.setView(coordinates[0], 16);
-    } else {
+    // Cadrer le premier segment coherent plutot que
+    // toutes les positions, potentiellement sur plusieurs continents.
+    const focusSegment = segments[0] || [];
+
+    const focusCoordinates = focusSegment.map(p => [
+      Number(p.latitude),
+      Number(p.longitude)
+    ]);
+
+    if (focusCoordinates.length === 1) {
+      gpsHistoryMap.setView(focusCoordinates[0], 13);
+    } else if (focusCoordinates.length > 1) {
       gpsHistoryMap.fitBounds(
-        L.latLngBounds(coordinates).pad(0.15),
+        L.latLngBounds(focusCoordinates).pad(0.15),
         { maxZoom: 16 }
       );
     }
@@ -243,7 +335,8 @@ async function gpsHistoryShow() {
         "Positions : " + result.returned +
         " / " + result.total +
         " | Debut : " + gpsHistoryDate(first.recorded_at) +
-        " | Fin : " + gpsHistoryDate(last.recorded_at);
+        " | Fin : " + gpsHistoryDate(last.recorded_at) +
+        " | Segments : " + segments.length;
     }
 
     gpsHistoryStatus(
@@ -265,6 +358,7 @@ async function gpsHistoryShow() {
    ========================================== */
 
 let gpsPlaybackPositions = [];
+let gpsPlaybackMode = "ALL";
 let gpsPlaybackIndex = 0;
 let gpsPlaybackTimer = null;
 let gpsPlaybackMarker = null;
@@ -289,6 +383,7 @@ function gpsPlaybackReset() {
   gpsPlaybackStop();
 
   gpsPlaybackPositions = [];
+  gpsPlaybackMode = "ALL";
   gpsPlaybackIndex = 0;
 
   if (gpsHistoryMap && gpsPlaybackMarker) {
@@ -317,7 +412,7 @@ function gpsPlaybackReset() {
   }
 }
 
-function gpsPlaybackLoad(positions) {
+function gpsPlaybackLoad(positions, mode = "ALL") {
   gpsPlaybackReset();
 
   if (!Array.isArray(positions) || positions.length === 0) {
@@ -325,6 +420,7 @@ function gpsPlaybackLoad(positions) {
   }
 
   gpsPlaybackPositions = positions;
+  gpsPlaybackMode = mode;
   gpsPlaybackIndex = 0;
 
   const slider = document.getElementById("gpsPlaybackSlider");
@@ -439,7 +535,25 @@ function gpsPlaybackToggle() {
       return;
     }
 
-    gpsPlaybackRender(gpsPlaybackIndex + 1);
+    const nextIndex = gpsPlaybackIndex + 1;
+
+    if (gpsHistoryHasBreak(
+      gpsPlaybackPositions[gpsPlaybackIndex],
+      gpsPlaybackPositions[nextIndex],
+      gpsPlaybackMode
+    )) {
+      gpsPlaybackStop();
+
+      const info = document.getElementById("gpsPlaybackInfo");
+      if (info) {
+        info.textContent =
+          "Rupture du trajet : lecture arretee. " +
+          "Deplacez le curseur pour consulter le segment suivant.";
+      }
+      return;
+    }
+
+    gpsPlaybackRender(nextIndex);
 
     if (gpsPlaybackIndex >= gpsPlaybackPositions.length - 1) {
       gpsPlaybackStop();
