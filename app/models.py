@@ -1,8 +1,11 @@
+
+from sqlalchemy import ForeignKeyConstraint, CheckConstraint
 from datetime import datetime, timezone
 from enum import Enum
 from sqlalchemy import String,Integer,Float,DateTime,ForeignKey,Enum as SAEnum,Boolean
 from sqlalchemy.orm import Mapped,mapped_column,relationship
 from sqlalchemy import UniqueConstraint, Identity, func
+from sqlalchemy import CheckConstraint
 from .db import Base
 def now(): return datetime.now(timezone.utc)
 class Role(str,Enum): ADMIN="ADMIN"; COUNTRY_MANAGER="COUNTRY_MANAGER"; CONTROLLER="CONTROLLER"; DRIVER="DRIVER"; AGENT="AGENT"
@@ -11,11 +14,47 @@ class PaymentStatus(str,Enum): PENDING="PENDING"; SUCCESS="SUCCESS"; FAILED="FAI
 class Country(Base):
  __tablename__="countries"; id:Mapped[int]=mapped_column(primary_key=True); code:Mapped[str]=mapped_column(String(2),unique=True); name:Mapped[str]=mapped_column(String(80)); currency:Mapped[str]=mapped_column(String(3))
 # V5.7 : is_active interdit la connexion ; token_version invalide les anciens JWT.
-# Les colonnes doivent être ajoutées par la migration SQL AVANT le redémarrage API.
+# Les colonnes doivent Ãªtre ajoutÃ©es par la migration SQL AVANT le redÃ©marrage API.
 class User(Base):
  __tablename__="users"; id:Mapped[int]=mapped_column(primary_key=True); username:Mapped[str]=mapped_column(String(80),unique=True,index=True); password_hash:Mapped[str]=mapped_column(String(255)); role:Mapped[Role]=mapped_column(SAEnum(Role)); is_active:Mapped[bool]=mapped_column(Boolean,default=True,nullable=False); token_version:Mapped[int]=mapped_column(Integer,default=0,nullable=False); country_id:Mapped[int | None]=mapped_column(ForeignKey("countries.id"),nullable=True); country=relationship("Country")
 class Line(Base):
- __tablename__="lines"; id:Mapped[int]=mapped_column(primary_key=True); country_id:Mapped[int]=mapped_column(ForeignKey("countries.id")); code:Mapped[str]=mapped_column(String(30),unique=True); name:Mapped[str]=mapped_column(String(120)); fare:Mapped[int]=mapped_column(Integer); country=relationship("Country")
+    __tablename__ = "lines"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    country_id: Mapped[int] = mapped_column(
+        ForeignKey("countries.id"),
+        nullable=False
+    )
+
+    city_id: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True
+    )
+
+    code: Mapped[str] = mapped_column(
+        String(30),
+        unique=True
+    )
+
+    name: Mapped[str] = mapped_column(String(120))
+
+    fare: Mapped[int] = mapped_column(Integer)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "id", "city_id",
+            name="uq_lines_id_city"
+        ),
+        ForeignKeyConstraint(
+            ["city_id", "country_id"],
+            ["cities.id", "cities.country_id"],
+            name="fk_lines_city_country"
+        ),
+    )
+
+    country = relationship("Country")
+
 class Vehicle(Base):
     __tablename__ = "vehicles"
 
@@ -357,3 +396,133 @@ class TripController(Base):
 
     trip = relationship("Trip")
     controller = relationship("User")
+
+
+# ============================================================
+# V5.9 - VILLES, ARRETS ET ITINERAIRES
+# ============================================================
+
+class City(Base):
+    __tablename__ = "cities"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    country_id: Mapped[int] = mapped_column(
+        ForeignKey("countries.id"),
+        nullable=False
+    )
+
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "country_id", "name",
+            name="uq_cities_country_name"
+        ),
+        UniqueConstraint(
+            "id", "country_id",
+            name="uq_cities_id_country"
+        ),
+    )
+
+    country = relationship("Country")
+
+
+class Stop(Base):
+    __tablename__ = "stops"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    city_id: Mapped[int] = mapped_column(
+        ForeignKey("cities.id"),
+        nullable=False
+    )
+
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+
+    latitude: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True
+    )
+
+    longitude: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "city_id", "name",
+            name="uq_stops_city_name"
+        ),
+        UniqueConstraint(
+            "id", "city_id",
+            name="uq_stops_id_city"
+        ),
+        CheckConstraint(
+            "latitude IS NULL OR latitude BETWEEN -90 AND 90",
+            name="ck_stops_latitude"
+        ),
+        CheckConstraint(
+            "longitude IS NULL OR longitude BETWEEN -180 AND 180",
+            name="ck_stops_longitude"
+        ),
+        CheckConstraint(
+            "(latitude IS NULL) = (longitude IS NULL)",
+            name="ck_stops_coordinates"
+        ),
+    )
+
+    city = relationship("City")
+
+
+class LineStop(Base):
+    __tablename__ = "line_stops"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    line_id: Mapped[int] = mapped_column(nullable=False)
+    city_id: Mapped[int] = mapped_column(nullable=False)
+    stop_id: Mapped[int] = mapped_column(nullable=False)
+
+    stop_order: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False
+    )
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["line_id", "city_id"],
+            ["lines.id", "lines.city_id"],
+            name="fk_line_stops_line_city"
+        ),
+        ForeignKeyConstraint(
+            ["stop_id", "city_id"],
+            ["stops.id", "stops.city_id"],
+            name="fk_line_stops_stop_city"
+        ),
+        UniqueConstraint(
+            "line_id", "stop_order",
+            name="uq_line_stops_order"
+        ),
+        UniqueConstraint(
+            "line_id", "stop_id",
+            name="uq_line_stops_stop"
+        ),
+        CheckConstraint(
+            "stop_order > 0",
+            name="ck_line_stops_order"
+        ),
+    )
+
+    line = relationship(
+        "Line",
+        primaryjoin="LineStop.line_id == Line.id",
+        foreign_keys="[LineStop.line_id]"
+    )
+
+    stop = relationship(
+        "Stop",
+        primaryjoin="LineStop.stop_id == Stop.id",
+        foreign_keys="[LineStop.stop_id]"
+    )
