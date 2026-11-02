@@ -131,3 +131,12 @@ class CashSessionOpenIn(BaseModel):
 class CashSessionCloseIn(BaseModel):
     declared_amount: int = Field(ge=0)
     notes: str | None = Field(default=None, max_length=500)
+
+
+# ============================================================
+# V5.9 - VALIDATION DES VILLES
+# ============================================================
+
+class CityIn(BaseModel):
+    country_id: int = Field(gt=0)
+    name: str = Field(min_length=1, max_length=120)
