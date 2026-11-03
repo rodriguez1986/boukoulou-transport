@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel,Field
+from pydantic import BaseModel,Field, model_validator
 from .models import Role
 class Login(BaseModel): username:str; password:str
 class UserIn(BaseModel): username:str; password:str=Field(min_length=8); role:Role
@@ -140,3 +140,20 @@ class CashSessionCloseIn(BaseModel):
 class CityIn(BaseModel):
     country_id: int = Field(gt=0)
     name: str = Field(min_length=1, max_length=120)
+# ============================================================
+# V5.9 - VALIDATION DES ARRETS URBAINS
+# ============================================================
+
+class StopIn(BaseModel):
+    city_id: int = Field(gt=0)
+    name: str = Field(min_length=1, max_length=160)
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+
+    @model_validator(mode="after")
+    def validate_coordinates(self):
+        if (self.latitude is None) != (self.longitude is None):
+            raise ValueError(
+                "La latitude et la longitude doivent etre fournies ensemble"
+            )
+        return self
