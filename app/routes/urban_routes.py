@@ -570,3 +570,71 @@ def search_public_urban_routes(
         u=public_context,
         db=db
     )
+
+
+# 56.29 - Consultation publique des villes
+@router.get("/urban/public/cities")
+def list_public_urban_cities(
+    db: Session = Depends(get_db)
+):
+    """
+    Liste publique des villes.
+    Aucune authentification requise.
+    """
+    cities = (
+        db.query(City)
+        .order_by(City.country_id, City.name, City.id)
+        .all()
+    )
+
+    return [
+        {
+            "id": city.id,
+            "country_id": city.country_id,
+            "name": city.name,
+        }
+        for city in cities
+    ]
+
+
+# 56.29 - Consultation publique des arrets d'une ville
+@router.get("/urban/public/stops")
+def list_public_urban_stops(
+    city_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Liste publique des arrets d'une ville.
+    Aucune authentification requise.
+    """
+    if city_id <= 0:
+        raise HTTPException(
+            status_code=422,
+            detail="Identifiant de ville invalide."
+        )
+
+    city = db.query(City).filter(City.id == city_id).first()
+
+    if city is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Ville introuvable."
+        )
+
+    stops = (
+        db.query(Stop)
+        .filter(Stop.city_id == city_id)
+        .order_by(Stop.name, Stop.id)
+        .all()
+    )
+
+    return [
+        {
+            "id": stop.id,
+            "city_id": stop.city_id,
+            "name": stop.name,
+            "latitude": stop.latitude,
+            "longitude": stop.longitude,
+        }
+        for stop in stops
+    ]
