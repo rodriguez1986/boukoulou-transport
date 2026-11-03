@@ -281,9 +281,25 @@ def countries(u=Depends(roles("ADMIN", "COUNTRY_MANAGER", "AGENT", "CONTROLLER",
 @app.post("/countries")
 def country(x:CountryIn,u=Depends(roles("ADMIN")),db:Session=Depends(get_db)): return save(db,Country(**x.model_dump()))
 @app.post("/lines")
-def line(x:LineIn,u=Depends(roles("ADMIN")),db:Session=Depends(get_db)):
- if not db.get(Country,x.country_id): raise HTTPException(404,"Pays introuvable")
- return save(db,Line(**x.model_dump()))
+def line(x: LineIn, u=Depends(roles("ADMIN")), db: Session = Depends(get_db)):
+    country = db.get(Country, x.country_id)
+
+    if country is None:
+        raise HTTPException(404, "Pays introuvable")
+
+    if x.city_id is not None:
+        city = db.get(City, x.city_id)
+
+        if city is None:
+            raise HTTPException(404, "Ville introuvable")
+
+        if city.country_id != x.country_id:
+            raise HTTPException(
+                422,
+                "La ville doit appartenir au pays de la ligne"
+            )
+
+    return save(db, Line(**x.model_dump()))
 @app.get("/lines")
 def lines(u=Depends(roles("ADMIN", "COUNTRY_MANAGER", "AGENT", "CONTROLLER", "DRIVER")), db: Session = Depends(get_db)):
     # Restreindre les lignes aux responsables nationaux authentifiÃƒÆ’Ã‚Â©s.

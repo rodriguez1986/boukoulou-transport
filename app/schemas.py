@@ -4,7 +4,12 @@ from .models import Role
 class Login(BaseModel): username:str; password:str
 class UserIn(BaseModel): username:str; password:str=Field(min_length=8); role:Role
 class CountryIn(BaseModel): code:str=Field(min_length=2,max_length=2); name:str; currency:str=Field(min_length=3,max_length=3)
-class LineIn(BaseModel): country_id:int; code:str; name:str; fare:int=Field(gt=0)
+class LineIn(BaseModel):
+    country_id: int = Field(gt=0)
+    city_id: int | None = Field(default=None, gt=0)
+    code: str
+    name: str
+    fare: int = Field(gt=0)
 class VehicleIn(BaseModel):
     country_id: int
     code: str
