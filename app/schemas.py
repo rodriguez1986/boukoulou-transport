@@ -157,3 +157,11 @@ class StopIn(BaseModel):
                 "La latitude et la longitude doivent etre fournies ensemble"
             )
         return self
+
+# ============================================================
+# V5.9 - ASSOCIATION DES ARRETS AUX LIGNES
+# ============================================================
+
+class LineStopIn(BaseModel):
+    stop_id: int = Field(gt=0)
+    stop_order: int = Field(gt=0)
