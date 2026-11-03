@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 from app.db import get_db
 from app.models import City, Country, Stop, Line, LineStop
@@ -221,6 +221,154 @@ def create_stop(
 # ============================================================
 # V5.9 - CONSULTATION DES ARRETS D'UNE LIGNE
 # ============================================================
+
+
+
+# ============================================================
+# 56.27 - Recherche d'itineraires urbains directs
+# ============================================================
+
+@router.get("/urban/routes/search")
+def search_urban_routes(
+    departure_stop_id: int,
+    arrival_stop_id: int,
+    u=Depends(
+        roles(
+            "ADMIN",
+            "COUNTRY_MANAGER",
+            "AGENT",
+            "CONTROLLER",
+            "DRIVER"
+        )
+    ),
+    db: Session = Depends(get_db)
+):
+    if departure_stop_id <= 0 or arrival_stop_id <= 0:
+        raise HTTPException(
+            status_code=422,
+            detail="Identifiant d'arret invalide"
+        )
+
+    if departure_stop_id == arrival_stop_id:
+        raise HTTPException(
+            status_code=422,
+            detail="Le depart et l'arrivee doivent etre differents"
+        )
+
+    departure = db.get(Stop, departure_stop_id)
+    arrival = db.get(Stop, arrival_stop_id)
+
+    if departure is None or arrival is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Arret introuvable"
+        )
+
+    if departure.city_id != arrival.city_id:
+        raise HTTPException(
+            status_code=422,
+            detail="Les arrets doivent appartenir a la meme ville"
+        )
+
+    city = db.get(City, departure.city_id)
+
+    if city is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Ville introuvable"
+        )
+
+    if u.role.value == "COUNTRY_MANAGER":
+        if u.country_id is None:
+            raise HTTPException(
+                status_code=403,
+                detail="Pays d'affectation manquant"
+            )
+
+        if city.country_id != u.country_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Acces interdit a cette ville"
+            )
+
+    departure_link = aliased(LineStop)
+    arrival_link = aliased(LineStop)
+
+    matching_lines = (
+        db.query(
+            Line,
+            departure_link.stop_order,
+            arrival_link.stop_order
+        )
+        .join(
+            departure_link,
+            departure_link.line_id == Line.id
+        )
+        .join(
+            arrival_link,
+            arrival_link.line_id == Line.id
+        )
+        .filter(
+            Line.city_id == city.id,
+            Line.country_id == city.country_id,
+            departure_link.city_id == city.id,
+            arrival_link.city_id == city.id,
+            departure_link.stop_id == departure_stop_id,
+            arrival_link.stop_id == arrival_stop_id,
+            departure_link.stop_order < arrival_link.stop_order
+        )
+        .order_by(Line.id)
+        .all()
+    )
+
+    results = []
+
+    for line, departure_order, arrival_order in matching_lines:
+        intermediate_stops = (
+            db.query(LineStop, Stop)
+            .join(
+                Stop,
+                Stop.id == LineStop.stop_id
+            )
+            .filter(
+                LineStop.line_id == line.id,
+                LineStop.city_id == city.id,
+                Stop.city_id == city.id,
+                LineStop.stop_order > departure_order,
+                LineStop.stop_order < arrival_order
+            )
+            .order_by(LineStop.stop_order)
+            .all()
+        )
+
+        results.append({
+            "line_id": line.id,
+            "line_code": line.code,
+            "line_name": line.name,
+            "city_id": city.id,
+            "country_id": city.country_id,
+            "fare": line.fare,
+            "departure_stop": {
+                "id": departure.id,
+                "name": departure.name,
+                "stop_order": departure_order
+            },
+            "arrival_stop": {
+                "id": arrival.id,
+                "name": arrival.name,
+                "stop_order": arrival_order
+            },
+            "intermediate_stops": [
+                {
+                    "id": stop.id,
+                    "name": stop.name,
+                    "stop_order": link.stop_order
+                }
+                for link, stop in intermediate_stops
+            ]
+        })
+
+    return results
 
 @router.get("/lines/{line_id}/stops")
 def list_line_stops(
