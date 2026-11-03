@@ -540,3 +540,33 @@ def create_line_stop(
         "stop_id": association.stop_id,
         "stop_order": association.stop_order
     }
+
+
+# ============================================================
+# 56.28 - Recherche publique d'itineraires urbains
+# ============================================================
+
+@router.get("/urban/public/routes/search")
+def search_public_urban_routes(
+    departure_stop_id: int,
+    arrival_stop_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Recherche publique de trajets urbains directs.
+    Aucune authentification requise.
+    Consultation uniquement.
+    """
+    from types import SimpleNamespace
+
+    public_context = SimpleNamespace(
+        role=SimpleNamespace(value="PUBLIC"),
+        country_id=None
+    )
+
+    return search_urban_routes(
+        departure_stop_id=departure_stop_id,
+        arrival_stop_id=arrival_stop_id,
+        u=public_context,
+        db=db
+    )
