@@ -10,10 +10,6 @@
 
   const markers = new Map();
 
-  const CITY_CENTERS = Object.freeze({
-    1: { center: [-4.2634, 15.2429], zoom: 12 },
-    2: { center: [0.3924, 9.4536], zoom: 12 }
-  });
 
   function getElements() {
     return {
@@ -142,6 +138,7 @@
   function setStops(departure, arrival) {
     ensureMap();
     clearStopMarkers();
+    hasFittedBounds = false;
 
     createStopMarker(
       departure,
@@ -213,11 +210,8 @@
 
     const currentMap = ensureMap();
 
-    const city = CITY_CENTERS[Number(cityId)];
-
-    if (city) {
-      currentMap.setView(city.center, city.zoom);
-    }
+    // Centrage independant des identifiants des villes.
+    currentMap.setView([0, 15], 3);
 
     currentMap.invalidateSize();
   }
