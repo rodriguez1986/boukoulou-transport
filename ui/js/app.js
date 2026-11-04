@@ -1,3 +1,23 @@
+function updateLineCities(){
+  const countryId=Number($("#lc").value);
+  const citySelect=$("#lcity");
+  if(!citySelect)return;
+
+  const previousCity=citySelect.value;
+  const available=(cache.cities||[]).filter(
+    city=>Number(city.country_id)===countryId
+  );
+
+  citySelect.innerHTML=
+    '<option value="">Aucune ville (ligne non urbaine)</option>'+
+    available.map(city=>
+      `<option value="${Number(city.id)}">${esc(city.name)}</option>`
+    ).join("");
+
+  if(available.some(city=>String(city.id)===previousCity)){
+    citySelect.value=previousCity;
+  }
+}
 let tok=localStorage.bt_token||"";
 let currentUser=null;
 const ROLE_PAGES={ADMIN:["dash","network","fleet","gpsMap","trips","stock","cash","history","scan","users"],COUNTRY_MANAGER:["gpsMap"],AGENT:["sale","cash","gpsMap"],CONTROLLER:["scan","gpsMap"],DRIVER:["driverView"]};
@@ -55,17 +75,22 @@ function fmtDate(x){return x?new Date(x).toLocaleString("fr-FR"):"—"}
 function fmtMoney(x){return new Intl.NumberFormat("fr-FR").format(Number(x||0))+" XAF"}
 function pill(x){let v=val(x)||"—";return `<span class="pill ${esc(v)}">${esc(v)}</span>`}
 
-let cache={countries:[],lines:[],vehicles:[],trips:[],drivers:[],assignments:[],maintenance:[],fuel:[],fleetDashboard:null,operationsDashboard:null};
+let cache={countries:[],cities:[],lines:[],vehicles:[],trips:[],drivers:[],assignments:[],maintenance:[],fuel:[],fleetDashboard:null,operationsDashboard:null};
 function countryName(id){return cache.countries.find(x=>x.id==id)?.name||id}
 function lineName(id){return cache.lines.find(x=>x.id==id)?.name||id}
 function vehicleName(id){let v=cache.vehicles.find(x=>x.id==id);return v?`${v.code} - ${v.plate}`:id}
 function driverName(id){let d=cache.drivers.find(x=>x.id==id);return d?`${d.first_name} ${d.last_name}`:id}
 
 async function load(){
-  let [c,l,v,t]=await Promise.all([api("/countries"),api("/lines"),api("/vehicles"),api("/trips")]);
-  cache.countries=c;cache.lines=l;cache.vehicles=v;cache.trips=t;
+  let [c,ci,l,v,t]=await Promise.all([api("/countries"),api("/cities"),api("/lines"),api("/vehicles"),api("/trips")]);
+  cache.countries=c;cache.cities=ci;cache.lines=l;cache.vehicles=v;cache.trips=t;
   let co=c.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");
-  $("#lc").innerHTML=$("#vc").innerHTML=co;
+  const previousCountry = $("#lc").value;
+$("#lc").innerHTML=$("#vc").innerHTML=co;
+if (c.some(x=>String(x.id)===previousCountry)) {
+  $("#lc").value=previousCountry;
+}
+updateLineCities();
   let cf=$("#countryFilter");
   if(cf&&cf.options.length<=1)cf.innerHTML='<option value="">Tous les pays</option>'+co;
   $("#tl").innerHTML=l.map(x=>`<option value="${x.id}">${esc(x.code)} - ${esc(x.name)}</option>`).join("");
@@ -98,7 +123,7 @@ async function dashboard(){
 }
 
 async function addLine(){
-  try{await api("/lines",{method:"POST",body:JSON.stringify({country_id:+$("#lc").value,code:$("#lcode").value,name:$("#lname").value,fare:+$("#fare").value})});await load();alert("Ligne enregistrée")}
+  try{await api("/lines",{method:"POST",body:JSON.stringify({country_id:+$("#lc").value,city_id:$("#lcity").value?+$("#lcity").value:null,code:$("#lcode").value,name:$("#lname").value,fare:+$("#fare").value})});await load();alert("Ligne enregistrée")}
   catch(e){alert(e.message)}
 }
 async function addVehicle(){

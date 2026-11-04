@@ -53,7 +53,10 @@
       <div class="cols">
         <div class="card">
           <h2>Nouvelle ligne</h2>
-          <select id="lc"></select>
+          <select id="lc" onchange="updateLineCities()"></select>
+<select id="lcity" aria-label="Ville de la ligne">
+  <option value="">Aucune ville (ligne non urbaine)</option>
+</select>
           <input id="lcode" placeholder="Code">
           <input id="lname" placeholder="Nom">
           <input id="fare" type="number" placeholder="Tarif XAF">
