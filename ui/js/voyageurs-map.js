@@ -3,6 +3,8 @@
 
   let map = null;
   let markerLayer = null;
+  let stopLayer = null;
+  let stopPositions = [];
   let activeLineId = null;
   let hasFittedBounds = false;
 
@@ -59,6 +61,7 @@
     ).addTo(map);
 
     markerLayer = window.L.layerGroup().addTo(map);
+    stopLayer = window.L.layerGroup().addTo(map);
 
     map.setView([0, 15], 3);
 
@@ -84,11 +87,92 @@
     markers.clear();
   }
 
+  function clearStopMarkers() {
+    stopPositions = [];
+
+    if (stopLayer) {
+      stopLayer.clearLayers();
+    }
+  }
+
+  function createStopMarker(stop, label, color) {
+    if (!stop ||
+        stop.latitude == null ||
+        stop.longitude == null) {
+      return null;
+    }
+
+    const latitude = Number(stop.latitude);
+    const longitude = Number(stop.longitude);
+
+    if (!validCoordinate(latitude, longitude)) {
+      return null;
+    }
+
+    const marker = window.L.circleMarker(
+      [latitude, longitude],
+      {
+        radius: 9,
+        color: "#ffffff",
+        weight: 2,
+        fillColor: color,
+        fillOpacity: 1
+      }
+    );
+
+    const popup = document.createElement("div");
+
+    const title = document.createElement("strong");
+    title.textContent = label;
+
+    const name = document.createElement("div");
+    name.textContent = String(stop.name || "Arret");
+
+    popup.appendChild(title);
+    popup.appendChild(name);
+
+    marker.bindPopup(popup);
+    marker.addTo(stopLayer);
+
+    stopPositions.push([latitude, longitude]);
+
+    return marker;
+  }
+
+  function setStops(departure, arrival) {
+    ensureMap();
+    clearStopMarkers();
+
+    createStopMarker(
+      departure,
+      "Depart",
+      "#15803d"
+    );
+
+    createStopMarker(
+      arrival,
+      "Arrivee",
+      "#dc2626"
+    );
+
+    if (stopPositions.length === 2) {
+      map.fitBounds(stopPositions, {
+        padding: [50, 50],
+        maxZoom: 15
+      });
+      hasFittedBounds = true;
+    } else if (stopPositions.length === 1) {
+      map.setView(stopPositions[0], 14);
+      hasFittedBounds = true;
+    }
+  }
+
   function stop() {
     activeLineId = null;
     hasFittedBounds = false;
 
     clearMarkers();
+    clearStopMarkers();
 
     const { section, lineName } = getElements();
 
@@ -241,6 +325,7 @@
     start,
     update,
     stop,
-    showError
+    showError,
+    setStops
   };
 })();

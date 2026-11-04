@@ -457,6 +457,19 @@
           route.line_name || route.code || "Ligne urbaine",
           citySelect.value
         );
+
+        const departureStop = stops.find(
+          stop => String(stop.id) === departureSelect.value
+        );
+
+        const arrivalStop = stops.find(
+          stop => String(stop.id) === arrivalSelect.value
+        );
+
+        window.BoukoulouMap.setStops(
+          departureStop || null,
+          arrivalStop || null
+        );
       } catch (error) {
         setMessage(
           "Impossible d'ouvrir la carte : " + error.message,
