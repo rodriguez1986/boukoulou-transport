@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Voyageurs | Boukoulou Transport</title>
+
+  <meta
+    name="description"
+    content="Recherchez votre trajet urbain avec Boukoulou Transport."
+  >
+
+  <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="/static/css/voyageurs.css">
+  <script src="/static/vendor/leaflet/leaflet.js" defer></script>
+  <script src="/static/js/voyageurs-gps.js" defer></script>
+  <script src="/static/js/voyageurs-map.js" defer></script>
+  <script src="/static/js/voyageurs.js" defer></script>
+  <link rel="icon" type="image/png" href="/static/assets/logo-boukoulou.png">
+</head>
+
+<body>
+
+  <header class="site-header">
+    <div class="container header-content">
+      <a class="brand" href="/static/voyageurs.html">
+        <img src="/static/assets/logo-boukoulou.png" alt="Boukoulou Transport - Voyageons en confiance" class="brand-logo">
+        <span>
+          <strong>Boukoulou Transport</strong>
+          <small>Votre ville, votre trajet</small>
+        </span>
+      </a>
+
+      <a class="admin-link" href="/">
+        Espace professionnel
+      </a>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <section class="hero">
+      <p class="eyebrow">Transport urbain</p>
+      <h1>Ou souhaitez-vous aller ?</h1>
+      <p>
+        Trouvez une ligne de transport dans votre ville,
+        consultez les arrets desservis et les tarifs.
+      </p>
+    </section>
+
+    <section class="search-card" aria-labelledby="search-title">
+
+      <h2 id="search-title">Rechercher un trajet</h2>
+
+      <form id="route-search-form">
+
+        <div class="field">
+          <label for="city-select">Ville</label>
+          <select id="city-select" name="city" required>
+            <option value="">Chargement des villes...</option>
+          </select>
+        </div>
+
+        <div class="fields-grid">
+
+          <div class="field">
+            <label for="departure-select">
+              Arret de depart
+            </label>
+            <select
+              id="departure-select"
+              name="departure"
+              required
+              disabled
+            >
+              <option value="">Choisissez une ville</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="arrival-select">
+              Arret d'arrivee
+            </label>
+            <select
+              id="arrival-select"
+              name="arrival"
+              required
+              disabled
+            >
+              <option value="">Choisissez une ville</option>
+            </select>
+          </div>
+
+        </div>
+
+        <button id="search-button" type="submit" disabled>
+          Rechercher un trajet
+        </button>
+
+      </form>
+
+      <p
+        id="search-message"
+        class="message"
+        role="status"
+        aria-live="polite"
+      ></p>
+
+    </section>
+
+    <section
+      id="results-section"
+      class="results-section"
+      aria-labelledby="results-title"
+      hidden
+    >
+      <div class="section-heading">
+        <h2 id="results-title">Itineraires disponibles</h2>
+        <p id="results-count"></p>
+      </div>
+
+      <div id="route-results"></div>
+    </section>
+
+    <!-- Carte publique de suivi GPS des bus -->
+    <section
+      id="gps-section"
+      class="gps-section"
+      aria-labelledby="gps-title"
+      hidden
+    >
+      <div class="section-heading">
+        <h2 id="gps-title">Suivi des bus en direct</h2>
+        <p id="gps-line-name"></p>
+      </div>
+
+      <p
+        id="gps-status"
+        class="message"
+        role="status"
+        aria-live="polite"
+      >
+        Chargement des positions GPS...
+      </p>
+
+      <div
+        id="gps-map"
+        class="gps-map"
+        aria-label="Carte des bus en circulation"
+      ></div>
+
+      <p class="gps-notice">
+        Les positions affichees sont indicatives et
+        actualisees automatiquement.
+      </p>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>
+        Boukoulou Transport - Transport urbain
+      </p>
+    </div>
+  </footer>
+
+</body>
+</html>

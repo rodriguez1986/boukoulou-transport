@@ -1,0 +1,525 @@
+:root {
+  --primary: #103b73;
+  --primary-dark: #082653;
+  --primary-light: #eaf2fb;
+  --gold: #e6a800;
+  --gold-light: #fff6d9;
+  --background: #f5f7fa;
+  --surface: #ffffff;
+  --text: #182230;
+  --muted: #667085;
+  --border: #dce3ea;
+  --danger: #b42318;
+  --radius: 16px;
+  --shadow: 0 12px 32px rgba(16, 24, 40, 0.07);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--background);
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  line-height: 1.5;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.container {
+  width: min(1100px, calc(100% - 32px));
+  margin-inline: auto;
+}
+
+.site-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.header-content {
+  min-height: 84px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.brand-logo {
+  display: block;
+  width: 150px;
+  height: 72px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.brand strong {
+  display: block;
+  font-size: 19px;
+}
+
+.brand small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.admin-link {
+  color: var(--primary-dark);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.admin-link:hover {
+  text-decoration: underline;
+}
+
+main {
+  flex: 1;
+  padding-bottom: 70px;
+}
+
+.hero {
+  padding: 60px 0 34px;
+  text-align: center;
+}
+
+.eyebrow {
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.hero h1 {
+  margin: 12px 0;
+  font-size: clamp(30px, 5vw, 48px);
+  line-height: 1.15;
+}
+
+.hero > p:last-child {
+  max-width: 650px;
+  margin: 0 auto;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.search-card {
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 34px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.search-card h2 {
+  margin: 0 0 26px;
+  font-size: 23px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-bottom: 20px;
+}
+
+.field label {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.field select {
+  width: 100%;
+  min-height: 50px;
+  padding: 12px 14px;
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font: inherit;
+}
+
+.field select:focus {
+  outline: 3px solid rgba(16, 59, 115, 0.18);
+  border-color: var(--primary);
+}
+
+.field select:disabled {
+  background: #f2f4f7;
+  color: #89919e;
+  cursor: not-allowed;
+}
+
+.fields-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+#search-button {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 6px;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 10px;
+  background: var(--primary);
+  color: white;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+#search-button:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+#search-button:disabled {
+  background: #a9b7b2;
+  cursor: not-allowed;
+}
+
+.message {
+  min-height: 24px;
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.message.error {
+  color: var(--danger);
+}
+
+.message.success {
+  color: var(--primary-dark);
+}
+
+.results-section {
+  max-width: 850px;
+  margin: 42px auto 0;
+}
+
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.section-heading h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.section-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.route-card {
+  margin-bottom: 18px;
+  padding: 26px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.route-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.route-name {
+  margin: 0;
+  font-size: 20px;
+}
+
+.route-code {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.route-fare {
+  color: var(--primary-dark);
+  font-size: 21px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.route-stops {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 10px;
+  background: var(--background);
+}
+
+.stop-name {
+  font-weight: 700;
+}
+
+.stop-label {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.route-arrow {
+  color: var(--primary);
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.intermediate-stops {
+  margin-top: 18px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.intermediate-stops strong {
+  color: var(--text);
+}
+
+.empty-state {
+  padding: 30px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--muted);
+  text-align: center;
+}
+
+.site-footer {
+  padding: 24px 0;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  text-align: center;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .header-content {
+    min-height: 72px;
+  }
+
+  .brand-logo {
+    width: 110px;
+    height: 56px;
+  }
+
+  .brand strong {
+    font-size: 15px;
+  }
+
+  .admin-link {
+    font-size: 12px;
+  }
+
+  .hero {
+    padding: 40px 0 26px;
+  }
+
+  .search-card {
+    padding: 22px;
+  }
+
+  .fields-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .section-heading,
+  .route-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .route-stops {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .route-arrow {
+    transform: rotate(90deg);
+  }
+
+  .route-card {
+    padding: 20px;
+  }
+}
+/* Identite visuelle Boukoulou Transport */
+
+.site-header {
+  border-bottom: 3px solid var(--gold);
+}
+
+#search-button {
+  box-shadow: 0 4px 0 var(--gold);
+}
+
+#search-button:focus-visible,
+.admin-link:focus-visible,
+.brand:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 4px;
+}
+
+.route-card {
+  border-left: 4px solid var(--gold);
+}
+
+.message.success {
+  color: #087f5b;
+}
+
+/* Bouton de suivi GPS des lignes urbaines */
+
+.gps-follow-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 46px;
+    margin-top: 20px;
+    padding: 12px 18px;
+    border: 2px solid var(--primary);
+    border-radius: 10px;
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.gps-follow-button:hover {
+    background: var(--gold-light);
+}
+
+.gps-follow-button:focus-visible {
+    outline: 3px solid var(--gold);
+    outline-offset: 3px;
+}
+
+/* =====================================================
+   BOUKOULOU TRANSPORT - CARTE GPS PUBLIQUE
+   ===================================================== */
+
+.gps-section {
+    margin-top: 32px;
+    margin-bottom: 40px;
+    padding: 24px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.gps-section[hidden] {
+    display: none;
+}
+
+.gps-section .section-heading {
+    margin-bottom: 16px;
+}
+
+.gps-map {
+    width: 100%;
+    height: 440px;
+    min-height: 320px;
+    border: 2px solid var(--primary);
+    border-radius: 14px;
+    overflow: hidden;
+    background: #eef2f3;
+    position: relative;
+    z-index: 0;
+}
+
+.gps-notice {
+    margin-top: 14px;
+    color: #64748b;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+#gps-line-name {
+    font-weight: 600;
+    color: var(--primary-dark);
+}
+
+#gps-status {
+    margin-bottom: 16px;
+}
+
+.gps-bus-popup {
+    min-width: 150px;
+    font-family: inherit;
+}
+
+.gps-bus-popup strong {
+    display: block;
+    margin-bottom: 6px;
+    color: #123b35;
+}
+
+.gps-bus-popup span {
+    display: block;
+    font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+
+    .gps-section {
+        padding: 16px;
+        margin-top: 24px;
+    }
+
+    .gps-map {
+        height: 340px;
+        min-height: 280px;
+    }
+}
+
+@media (max-width: 480px) {
+
+    .gps-map {
+        height: 300px;
+        min-height: 260px;
+    }
+}

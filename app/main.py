@@ -54,7 +54,9 @@ async def lifespan(app: FastAPI):
 
 app=FastAPI(title="Boukoulou Transport",version="1.0.0",lifespan=lifespan)
 app.include_router(v59_router)
+from app.routes.urban_public_gps import router as urban_public_gps_router
 app.include_router(urban_router)
+app.include_router(urban_public_gps_router)
 
 # Activer le tableau de bord financier rÃƒÆ’Ã‚Â©servÃƒÆ’Ã‚Â© aux administrateurs.
 app.include_router(finance_router)
