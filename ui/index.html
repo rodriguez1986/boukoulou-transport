@@ -81,6 +81,81 @@
         <div class="card"><h2>Lignes</h2><div id="lines"></div></div>
         <div class="card"><h2>Véhicules</h2><div id="vehicles"></div></div>
       </div>
+      <div id="urbanAdmin" class="cols">
+
+        <div class="card">
+          <h2>Nouvelle ville</h2>
+          <select id="urbanCityCountry"></select>
+          <input id="urbanCityName" maxlength="120"
+                 placeholder="Nom de la ville">
+          <button onclick="addUrbanCity()">Enregistrer la ville</button>
+        </div>
+
+        <div class="card">
+          <h2>Nouvel arrêt</h2>
+          <select id="urbanStopCountry"
+                  onchange="updateUrbanStopCities()"></select>
+          <select id="urbanStopCity"></select>
+          <input id="urbanStopName" maxlength="160"
+                 placeholder="Nom de l'arrêt">
+          <input id="urbanStopLatitude" type="number"
+                 step="any" min="-90" max="90"
+                 placeholder="Latitude GPS (facultative)">
+          <input id="urbanStopLongitude" type="number"
+                 step="any" min="-180" max="180"
+                 placeholder="Longitude GPS (facultative)">
+          <button onclick="addUrbanStop()">Enregistrer l'arrêt</button>
+        </div>
+
+      </div>
+
+      <div class="card">
+        <h2>Arrêts par ville</h2>
+        <div class="toolbar">
+          <select id="urbanStopsCountry"
+                  onchange="updateUrbanStopsCities()"></select>
+          <select id="urbanStopsCity"
+                  onchange="loadUrbanStops()"></select>
+          <button class="secondary"
+                  onclick="loadUrbanStops()">Actualiser</button>
+        </div>
+        <div id="urbanStopsList">Sélectionnez une ville.</div>
+      </div>
+      <div class="card" id="urbanLineStops">
+        <h2>Gestion des itinéraires urbains</h2>
+
+        <div class="toolbar">
+          <select id="urbanRouteLine"
+                  onchange="loadUrbanLineStops()">
+            <option value="">Sélectionner une ligne</option>
+          </select>
+
+          <button class="secondary"
+                  onclick="loadUrbanLineStops()">
+            Actualiser
+          </button>
+        </div>
+
+        <div id="urbanRouteInfo">
+          Sélectionnez une ligne pour afficher son itinéraire.
+        </div>
+
+        <div id="urbanRouteStops"></div>
+
+        <h3>Ajouter un arrêt à la ligne</h3>
+
+        <div class="toolbar">
+          <select id="urbanRouteAvailableStop">
+            <option value="">Sélectionner un arrêt</option>
+          </select>
+
+          <button onclick="addUrbanLineStop()">
+            Ajouter à l'itinéraire
+          </button>
+        </div>
+
+        <div id="urbanRouteMessage"></div>
+      </div>
     </section>
 
     <section id="fleet" class="hide">
@@ -427,6 +502,7 @@
 <script src="/static/js/driver-gps.js"></script>
 <script src="/static/js/driver-phone-gps.js"></script>
 <script src="/static/js/app.js"></script>
+<script src="/static/js/urban-admin.js"></script>
 <script src="/static/js/v59.js"></script>
 </body>
 </html>
