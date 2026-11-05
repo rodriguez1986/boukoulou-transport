@@ -4,6 +4,7 @@ from .gps.live_api import router as gps_live_router
 from .gps.device_api import router as gps_device_router
 from .gps.phone_api import router as gps_phone_router
 from .routes.urban_routes import router as urban_router
+from .routes.route_versions import router as route_versions_router
 
 from .payment_breakdown import calculer_recettes_par_provider
 import os,uuid
@@ -56,6 +57,7 @@ app=FastAPI(title="Boukoulou Transport",version="1.0.0",lifespan=lifespan)
 app.include_router(v59_router)
 from app.routes.urban_public_gps import router as urban_public_gps_router
 app.include_router(urban_router)
+app.include_router(route_versions_router)
 app.include_router(urban_public_gps_router)
 
 # Activer le tableau de bord financier rÃƒÆ’Ã‚Â©servÃƒÆ’Ã‚Â© aux administrateurs.
