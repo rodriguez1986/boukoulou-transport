@@ -1,5 +1,8 @@
-﻿from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field, StrictInt, field_validator
 from sqlalchemy.orm import Session
+from sqlalchemy import delete
+from sqlalchemy.exc import IntegrityError
 
 from app.db import get_db
 from app.models import (
@@ -190,3 +193,129 @@ def list_route_version_stops(
         }
         for association, stop in rows
     ]
+
+
+class DraftRouteStopsIn(BaseModel):
+    stop_ids: list[StrictInt] = Field(min_length=2)
+
+    @field_validator("stop_ids")
+    @classmethod
+    def validate_stop_ids(cls, values):
+        if any(type(stop_id) is not int or stop_id <= 0 for stop_id in values):
+            raise ValueError("Les identifiants doivent etre des entiers positifs")
+
+        if len(values) != len(set(values)):
+            raise ValueError("Un arret ne peut pas etre repete")
+
+        return values
+
+
+@router.put("/route-versions/{version_id}/stops")
+def replace_draft_route_stops(
+    version_id: int,
+    payload: DraftRouteStopsIn,
+    user=Depends(roles("ADMIN")),
+    db: Session = Depends(get_db),
+):
+    if version_id <= 0:
+        raise HTTPException(
+            status_code=422,
+            detail="Identifiant de version invalide",
+        )
+
+    try:
+        version = (
+            db.query(RouteVersion)
+            .filter(RouteVersion.id == version_id)
+            .with_for_update()
+            .one_or_none()
+        )
+
+        if version is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Version introuvable",
+            )
+
+        if version.status != "DRAFT":
+            raise HTTPException(
+                status_code=409,
+                detail="Seules les versions DRAFT sont modifiables",
+            )
+
+        stops = (
+            db.query(Stop)
+            .filter(Stop.id.in_(payload.stop_ids))
+            .all()
+        )
+
+        stops_by_id = {stop.id: stop for stop in stops}
+
+        if len(stops_by_id) != len(payload.stop_ids):
+            raise HTTPException(
+                status_code=422,
+                detail="Un ou plusieurs arrets sont introuvables",
+            )
+
+        if any(
+            stop.city_id != version.city_id
+            for stop in stops
+        ):
+            raise HTTPException(
+                status_code=422,
+                detail="Tous les arrets doivent appartenir a la ville du parcours",
+            )
+
+        db.execute(
+            delete(RouteVersionStop).where(
+                RouteVersionStop.route_version_id == version_id
+            )
+        )
+
+        new_rows = [
+            RouteVersionStop(
+                route_version_id=version_id,
+                city_id=version.city_id,
+                stop_id=stop_id,
+                stop_order=position,
+            )
+            for position, stop_id in enumerate(
+                payload.stop_ids,
+                start=1,
+            )
+        ]
+
+        db.add_all(new_rows)
+        db.commit()
+
+        return {
+            "route_version_id": version_id,
+            "status": version.status,
+            "stop_count": len(payload.stop_ids),
+            "stops": [
+                {
+                    "stop_id": stop_id,
+                    "stop_order": position,
+                    "name": stops_by_id[stop_id].name,
+                }
+                for position, stop_id in enumerate(
+                    payload.stop_ids,
+                    start=1,
+                )
+            ],
+        }
+
+    except HTTPException:
+        db.rollback()
+        raise
+
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Conflit de contraintes sur les arrets du parcours",
+        )
+
+    except Exception:
+        db.rollback()
+        raise
