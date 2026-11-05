@@ -200,6 +200,20 @@ class Trip(Base):
     line = relationship("Line")
     vehicle = relationship("Vehicle")
     driver = relationship("Driver")
+
+    route_version_id: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True
+    )
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["route_version_id", "line_id"],
+            ["route_versions.id", "route_versions.line_id"],
+            name="fk_trips_route_version_line"
+        ),
+    )
+
 class Ticket(Base):
  __tablename__="tickets"; id:Mapped[int]=mapped_column(primary_key=True); code:Mapped[str]=mapped_column(String(80),unique=True,index=True); trip_id:Mapped[int]=mapped_column(ForeignKey("trips.id")); amount:Mapped[int]=mapped_column(Integer); status:Mapped[TicketStatus]=mapped_column(SAEnum(TicketStatus),default=TicketStatus.PENDING); created_at:Mapped[datetime]=mapped_column(DateTime(timezone=True),default=now); expires_at:Mapped[datetime]=mapped_column(DateTime(timezone=True)); used_at:Mapped[datetime|None]=mapped_column(DateTime(timezone=True),nullable=True); trip=relationship("Trip")
 class Payment(Base):
@@ -525,4 +539,202 @@ class LineStop(Base):
         "Stop",
         primaryjoin="LineStop.stop_id == Stop.id",
         foreign_keys="[LineStop.stop_id]"
+    )
+
+
+class RouteVariant(Base):
+    __tablename__ = "route_variants"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    line_id: Mapped[int] = mapped_column(
+        ForeignKey("lines.id"),
+        nullable=False
+    )
+
+    city_id: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False
+    )
+
+    direction: Mapped[str] = mapped_column(
+        String(10),
+        nullable=False
+    )
+
+    name: Mapped[str | None] = mapped_column(
+        String(160),
+        nullable=True
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False
+    )
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["line_id", "city_id"],
+            ["lines.id", "lines.city_id"],
+            name="fk_route_variants_line_city"
+        ),
+        UniqueConstraint(
+            "line_id", "direction",
+            name="uq_route_variants_line_direction"
+        ),
+        UniqueConstraint(
+            "id", "line_id",
+            name="uq_route_variants_id_line"
+        ),
+        UniqueConstraint(
+            "id", "city_id",
+            name="uq_route_variants_id_city"
+        ),
+        CheckConstraint(
+            "direction IN ('ALLER','RETOUR')",
+            name="ck_route_variants_direction"
+        ),
+    )
+
+
+class RouteVersion(Base):
+    __tablename__ = "route_versions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    route_variant_id: Mapped[int] = mapped_column(
+        ForeignKey("route_variants.id"),
+        nullable=False
+    )
+
+    line_id: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False
+    )
+
+    city_id: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False
+    )
+
+    version_number: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(20),
+        default="DRAFT",
+        server_default="DRAFT",
+        nullable=False
+    )
+
+    valid_from: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+
+    valid_to: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False
+    )
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["route_variant_id", "line_id"],
+            ["route_variants.id", "route_variants.line_id"],
+            name="fk_route_versions_variant_line"
+        ),
+        ForeignKeyConstraint(
+            ["route_variant_id", "city_id"],
+            ["route_variants.id", "route_variants.city_id"],
+            name="fk_route_versions_variant_city"
+        ),
+        UniqueConstraint(
+            "route_variant_id", "version_number",
+            name="uq_route_versions_number"
+        ),
+        UniqueConstraint(
+            "id", "line_id",
+            name="uq_route_versions_id_line"
+        ),
+        UniqueConstraint(
+            "id", "city_id",
+            name="uq_route_versions_id_city"
+        ),
+        CheckConstraint(
+            "version_number > 0",
+            name="ck_route_versions_number"
+        ),
+        CheckConstraint(
+            "status IN ('DRAFT','ACTIVE','ARCHIVED')",
+            name="ck_route_versions_status"
+        ),
+        CheckConstraint(
+            "valid_to IS NULL OR "
+            "(valid_from IS NOT NULL AND valid_to > valid_from)",
+            name="ck_route_versions_dates"
+        ),
+        CheckConstraint(
+            "status <> 'ACTIVE' OR valid_from IS NOT NULL",
+            name="ck_route_versions_active_start"
+        ),
+    )
+
+
+class RouteVersionStop(Base):
+    __tablename__ = "route_version_stops"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    route_version_id: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False
+    )
+
+    city_id: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False
+    )
+
+    stop_id: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False
+    )
+
+    stop_order: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False
+    )
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["route_version_id", "city_id"],
+            ["route_versions.id", "route_versions.city_id"],
+            name="fk_route_version_stops_version_city"
+        ),
+        ForeignKeyConstraint(
+            ["stop_id", "city_id"],
+            ["stops.id", "stops.city_id"],
+            name="fk_route_version_stops_stop_city"
+        ),
+        UniqueConstraint(
+            "route_version_id", "stop_order",
+            name="uq_route_version_stops_order"
+        ),
+        UniqueConstraint(
+            "route_version_id", "stop_id",
+            name="uq_route_version_stops_stop"
+        ),
+        CheckConstraint(
+            "stop_order > 0",
+            name="ck_route_version_stops_order"
+        ),
     )
